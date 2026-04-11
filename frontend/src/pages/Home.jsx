@@ -145,86 +145,85 @@ export default function Home() {
   if (!trip.isActive && trip.crossings.length === 0) {
     return (
       <div className="flex flex-col gap-5 p-5 pb-24">
-        <div className="text-center pt-6 pb-2">
-          <p className="text-2xl font-bold text-negro">Tu peaje, bajo control</p>
-          <p className="text-sm text-tierra mt-1">
-            {tarifaLabel === 'Fin de semana'
-              ? 'Tarifa de fin de semana activa'
-              : 'Tarifa de día de semana activa'}
+        <div className="text-center pt-8 pb-4">
+          <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-primary/10 flex items-center justify-center">
+            <svg className="w-10 h-10 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+            </svg>
+          </div>
+          <h1 className="text-[22px] font-bold text-text tracking-tight">Registra tus peajes</h1>
+          <p className="text-[15px] text-text-secondary mt-1">
+            Detecta automáticamente cada peaje que cruzas
           </p>
-        </div>
-
-        <div className="bg-primary rounded-2xl p-6 text-cream text-center">
-          <svg className="w-16 h-16 mx-auto mb-3 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-          <p className="text-lg font-medium">Registra tus peajes</p>
-          <p className="text-sm opacity-70 mt-1">Detecta automáticamente cada peaje que cruzas</p>
         </div>
 
         <button
           onClick={handleToggleTrip}
-          className="w-full py-5 rounded-2xl font-bold text-xl text-cream bg-negro active:bg-negro/80 transition-colors"
+          className="w-full py-[18px] rounded-2xl font-semibold text-[17px] text-white bg-primary active:bg-primary-dark transition-all shadow-sm"
         >
           Comenzar viaje
         </button>
 
-        <div className="bg-cream-dark rounded-xl p-4">
-          <p className="text-sm font-semibold text-negro mb-3">¿Cómo funciona?</p>
-          <div className="flex flex-col gap-3">
+        <div className="bg-surface-secondary rounded-2xl p-5">
+          <p className="text-[15px] font-semibold text-text mb-4">¿Cómo funciona?</p>
+          <div className="flex flex-col gap-4">
             {[
-              ['1', 'Presiona "Comenzar viaje" antes de salir'],
-              ['2', 'Acepta el permiso de ubicación si te lo pide'],
-              ['3', 'Suena una alerta cada vez que cruzas un peaje'],
-              ['4', 'Al llegar, presiona "Detener viaje"'],
-            ].map(([n, text]) => (
-              <div key={n} className="flex items-start gap-3">
-                <span className="w-7 h-7 bg-primary-light rounded-full flex items-center justify-center shrink-0">
-                  <span className="text-xs font-bold text-primary">{n}</span>
+              ['Comenzar viaje', 'Presiona el botón antes de salir'],
+              ['Permiso GPS', 'Acepta la ubicación si te lo pide'],
+              ['Alerta sonora', 'Suena cada vez que cruzas un peaje'],
+              ['Detener viaje', 'Al llegar, para ver el resumen'],
+            ].map(([title, desc], i) => (
+              <div key={i} className="flex items-start gap-3">
+                <span className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                  <span className="text-[12px] font-bold text-primary">{i + 1}</span>
                 </span>
-                <p className="text-sm text-negro/70">{text}</p>
+                <div>
+                  <p className="text-[14px] font-medium text-text">{title}</p>
+                  <p className="text-[13px] text-text-secondary">{desc}</p>
+                </div>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="bg-primary-light rounded-xl p-3 text-xs text-primary text-center">
-          Deja Safari abierto con la pantalla encendida durante el viaje
-        </div>
+        <p className="text-[12px] text-text-tertiary text-center">
+          Mantén Safari abierto durante el viaje &middot; Tarifa {tarifaLabel.toLowerCase()}
+        </p>
       </div>
     );
   }
 
   // ─── PANTALLA DURANTE / DESPUÉS DEL VIAJE ───
   return (
-    <div className="flex flex-col gap-4 p-4 pb-24">
-      <div className="bg-negro rounded-2xl p-6 text-cream">
-        <div className="flex items-center justify-between mb-1">
-          <span className="text-sm text-tierra">
+    <div className="flex flex-col gap-4 p-5 pb-24">
+      {/* Hero total */}
+      <div className="bg-primary rounded-3xl p-6 text-white shadow-lg">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-[13px] font-medium text-white/70">
             {trip.isActive ? 'Viaje en curso' : 'Viaje terminado'}
-            {trip.driver && <span className="text-cream/60"> &middot; {trip.driver}</span>}
           </span>
           {trip.isActive && (
-            <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-primary/30 text-primary-light">
-              <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-              GPS activo
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-white/20">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-300 animate-pulse" />
+              GPS
             </span>
           )}
         </div>
-        <p className="text-5xl font-bold tracking-tight mt-2">{formatCLP(trip.totalCost)}</p>
-        <p className="text-sm text-tierra mt-2">
+        <p className="text-[44px] font-bold tracking-tight leading-none">{formatCLP(trip.totalCost)}</p>
+        <p className="text-[14px] text-white/60 mt-2">
           {trip.tollCount === 0
             ? 'Esperando peajes...'
-            : `${trip.tollCount} peaje${trip.tollCount > 1 ? 's' : ''} cruzado${trip.tollCount > 1 ? 's' : ''}`}
+            : `${trip.tollCount} peaje${trip.tollCount > 1 ? 's' : ''}`}
+          {' '}&middot; Tarifa {tarifaLabel.toLowerCase()}
         </p>
-        <p className="text-xs text-hongo mt-1">Tarifa {tarifaLabel.toLowerCase()}</p>
       </div>
 
+      {/* Botones */}
       {trip.isActive ? (
         <button
           onClick={handleToggleTrip}
-          className="w-full py-4 rounded-2xl font-bold text-lg bg-red-600 active:bg-red-700 text-white transition-colors"
+          className="w-full py-[16px] rounded-2xl font-semibold text-[17px] bg-danger text-white active:opacity-80 transition-all"
         >
           Detener viaje
         </button>
@@ -233,60 +232,66 @@ export default function Home() {
           {trip.crossings.length > 0 && (
             <button
               onClick={handleResumeTrip}
-              className="flex-1 py-4 rounded-2xl font-bold text-lg bg-primary active:bg-primary-dark text-cream transition-colors"
+              className="flex-1 py-[16px] rounded-2xl font-semibold text-[17px] bg-primary text-white active:opacity-80 transition-all"
             >
               Reanudar
             </button>
           )}
           <button
             onClick={handleToggleTrip}
-            className="flex-1 py-4 rounded-2xl font-bold text-lg bg-negro active:bg-negro/80 text-cream transition-colors"
+            className="flex-1 py-[16px] rounded-2xl font-semibold text-[17px] bg-text text-white active:opacity-80 transition-all"
           >
             Nuevo viaje
           </button>
         </div>
       )}
 
+      {/* Aviso */}
       {trip.isActive && (
-        <div className="bg-primary-light rounded-xl p-4 text-primary">
-          <p className="text-sm font-semibold">Mantén esta pantalla abierta</p>
-          <p className="text-xs mt-1 opacity-80">No cambies de app ni bloquees el celular.</p>
+        <div className="bg-primary/8 rounded-2xl p-4">
+          <p className="text-[13px] font-medium text-primary">Mantén esta pantalla abierta</p>
+          <p className="text-[12px] text-text-secondary mt-0.5">No cambies de app ni bloquees el celular</p>
         </div>
       )}
 
+      {/* Error */}
       {gps.error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700">{gps.error}</div>
+        <div className="bg-danger/10 rounded-2xl p-4 text-[14px] text-danger">{gps.error}</div>
       )}
 
+      {/* GPS info */}
       {gps.isTracking && gps.position && (
-        <div className="bg-cream-dark rounded-xl p-3 text-xs text-tierra flex justify-between">
+        <div className="flex justify-between px-1 text-[12px] text-text-tertiary">
           <span>{gps.position.lat.toFixed(4)}, {gps.position.lng.toFixed(4)}</span>
           <span>{Math.round(gps.speed)} km/h</span>
         </div>
       )}
 
+      {/* Spinner */}
       {trip.isActive && trip.crossings.length === 0 && (
-        <div className="text-center py-6">
-          <div className="w-12 h-12 mx-auto mb-2 border-4 border-cream-dark border-t-primary rounded-full animate-spin" />
-          <p className="text-sm mt-3 text-negro">Buscando peajes cercanos...</p>
-          <p className="text-xs mt-1 text-tierra">Suena una alerta cuando cruces uno</p>
+        <div className="text-center py-8">
+          <div className="w-10 h-10 mx-auto border-[3px] border-surface-tertiary border-t-primary rounded-full animate-spin" />
+          <p className="text-[14px] text-text mt-4">Buscando peajes...</p>
+          <p className="text-[12px] text-text-tertiary mt-1">Suena una alerta al cruzar</p>
         </div>
       )}
 
+      {/* Peajes cruzados */}
       {trip.crossings.length > 0 && (
         <div className="flex flex-col gap-2">
-          <h2 className="text-sm font-semibold text-negro px-1">Peajes cruzados</h2>
+          <h2 className="text-[13px] font-semibold text-text-secondary px-1 uppercase tracking-wide">Peajes</h2>
           {[...trip.crossings].reverse().map((crossing) => (
             <TollChip key={`${crossing.toll.id}-${crossing.timestamp}`} crossing={crossing} />
           ))}
         </div>
       )}
 
+      {/* Ida y vuelta */}
       {!trip.isActive && trip.crossings.length > 0 && (
-        <div className="bg-cream-dark rounded-xl p-4">
+        <div className="bg-surface-secondary rounded-2xl p-4">
           <div className="flex justify-between items-center">
-            <span className="text-sm text-tierra">Ida y vuelta (estimado)</span>
-            <span className="font-bold text-negro">{formatCLP(trip.totalCost * 2)}</span>
+            <span className="text-[14px] text-text-secondary">Ida y vuelta</span>
+            <span className="text-[17px] font-bold text-text">{formatCLP(trip.totalCost * 2)}</span>
           </div>
         </div>
       )}
