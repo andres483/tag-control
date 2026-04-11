@@ -20,9 +20,9 @@ export default function Admin() {
   if (!authenticated) {
     return (
       <div className="min-h-screen bg-text flex items-center justify-center p-4">
-        <div className="bg-surface rounded-2xl p-8 max-w-xs w-full text-center">
-          <p className="text-lg font-bold text-text mb-1">Tag Control Admin</p>
-          <p className="text-sm text-text-secondary mb-6">Ingresa el PIN</p>
+        <div className="bg-white/5 rounded-2xl p-8 max-w-xs w-full text-center">
+          <p className="text-lg font-bold text-white mb-1">Tag Control Admin</p>
+          <p className="text-sm text-gray-400 mb-6">Ingresa el PIN</p>
           <input
             type="password"
             inputMode="numeric"
@@ -32,7 +32,7 @@ export default function Admin() {
             onKeyDown={(e) => {
               if (e.key === 'Enter' && pin === ADMIN_PIN) setAuthenticated(true);
             }}
-            className="w-full text-center text-3xl tracking-[0.5em] bg-surface-secondary rounded-xl px-4 py-4 text-text focus:outline-none focus:ring-2 focus:ring-primary/30"
+            className="w-full text-center text-3xl tracking-[0.5em] bg-white/5 rounded-xl px-4 py-4 text-white focus:outline-none focus:ring-2 focus:ring-primary/30"
             placeholder="****"
             autoFocus
           />
@@ -358,9 +358,9 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
               { label: 'Activos', value: stats.activeTrips },
               { label: 'Total', value: formatCLP(stats.totalCost) },
             ].map(s => (
-              <div key={s.label} className="bg-surface-secondary rounded-xl p-3 text-center">
+              <div key={s.label} className="bg-white/5 rounded-xl p-3 text-center">
                 <p className="text-lg font-bold">{s.value}</p>
-                <p className="text-xs text-text-secondary">{s.label}</p>
+                <p className="text-xs text-gray-400">{s.label}</p>
               </div>
             ))}
           </div>
@@ -371,7 +371,7 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
           <div className="flex flex-col gap-0 -mx-4 -mt-4">
             {/* Mapa grande */}
             <div className="relative">
-              <div ref={mapRef} className="w-full h-[50vh] bg-surface-secondary" />
+              <div ref={mapRef} className="w-full h-[50vh] bg-white/5" />
               {!mapsReady && (
                 <div className="absolute inset-0 flex items-center justify-center bg-text/50">
                   <div className="w-8 h-8 border-4 border-cream/20 border-t-primary rounded-full animate-spin" />
@@ -381,7 +381,7 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
                 <div className="absolute inset-0 flex items-center justify-center bg-text/60">
                   <div className="text-center">
                     <p className="text-white font-medium">Sin viajes activos</p>
-                    <p className="text-text-secondary text-xs mt-1">Los viajes aparecerán aquí en tiempo real</p>
+                    <p className="text-gray-400 text-xs mt-1">Los viajes aparecerán aquí en tiempo real</p>
                   </div>
                 </div>
               )}
@@ -406,7 +406,7 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
                 return (
                   <div
                     key={t.id}
-                    className="bg-surface-secondary backdrop-blur-md rounded-2xl border border-surface-tertiary overflow-hidden"
+                    className="bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 overflow-hidden"
                   >
                     <button
                       onClick={() => setExpandedLiveTrip(isExpanded ? null : t.id)}
@@ -419,7 +419,7 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
                           </div>
                           <div>
                             <p className="font-bold text-white">{t.driver}</p>
-                            <p className="text-xs text-text-secondary flex items-center gap-1">
+                            <p className="text-xs text-gray-400 flex items-center gap-1">
                               <span className={`inline-block w-1.5 h-1.5 rounded-full ${isRecent ? 'bg-green-400' : 'bg-yellow-400'}`} />
                               {isRecent ? 'En vivo' : `Hace ${ago}s`}
                               &middot; {Math.round(t.speed || 0)} km/h
@@ -429,7 +429,7 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
                         </div>
                         <div className="text-right">
                           <p className="text-2xl font-bold text-primary">{formatCLP(t.total_cost || 0)}</p>
-                          <p className="text-xs text-text-secondary">{t.toll_count || 0} peajes ▾</p>
+                          <p className="text-xs text-gray-400">{t.toll_count || 0} peajes ▾</p>
                         </div>
                       </div>
                     </button>
@@ -437,9 +437,9 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
                     {/* Acordeón: peajes del viaje */}
                     {isExpanded && (
                       <div className="px-4 pb-4">
-                        <div className="border-t border-surface-tertiary pt-3 flex flex-col gap-2">
+                        <div className="border-t border-white/10 pt-3 flex flex-col gap-2">
                           {tripCx.length === 0 ? (
-                            <p className="text-xs text-text-secondary text-center">Sin peajes aún</p>
+                            <p className="text-xs text-gray-400 text-center">Sin peajes aún</p>
                           ) : (
                             tripCx.map((c, i) => (
                               <div key={c.id} className="flex items-center justify-between text-xs">
@@ -447,7 +447,7 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
                                   <span className="w-5 h-5 bg-primary/20 rounded-full flex items-center justify-center text-[10px] text-primary font-bold">{i + 1}</span>
                                   <div>
                                     <span className="text-white">{c.toll_nombre}</span>
-                                    <span className="text-text-secondary ml-1">{formatTime(c.crossed_at)}</span>
+                                    <span className="text-gray-400 ml-1">{formatTime(c.crossed_at)}</span>
                                   </div>
                                 </div>
                                 <span className="text-primary font-medium">{formatCLP(c.tarifa)}</span>
@@ -468,7 +468,7 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
         {tab === 'trips' && (
           <div className="flex flex-col gap-2">
             {completedTrips.length === 0 && (
-              <p className="text-center text-text-secondary text-sm py-4">
+              <p className="text-center text-gray-400 text-sm py-4">
                 Los viajes aparecerán aquí cuando alguien presione "Detener viaje" (versión nueva)
               </p>
             )}
@@ -479,30 +479,30 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
                 <button
                   key={t.id}
                   onClick={() => setSelectedTripId(isOpen ? null : t.id)}
-                  className={`text-left rounded-xl p-4 transition-colors ${isOpen ? 'bg-primary/20' : 'bg-surface-secondary'}`}
+                  className={`text-left rounded-xl p-4 transition-colors ${isOpen ? 'bg-primary/20' : 'bg-white/5'}`}
                 >
                   <div className="flex justify-between items-start">
                     <div>
                       <p className="font-medium text-sm">{t.driver}</p>
-                      <p className="text-xs text-text-secondary mt-0.5">
+                      <p className="text-xs text-gray-400 mt-0.5">
                         {formatDate(t.start_time)} &middot; {formatTime(t.start_time)} – {formatTime(t.end_time)}
                       </p>
-                      <p className="text-xs text-text-secondary mt-0.5">
+                      <p className="text-xs text-gray-400 mt-0.5">
                         {(t.routes || []).join(' → ')}
                       </p>
                     </div>
                     <div className="text-right">
                       <p className="font-bold text-primary text-sm">{formatCLP(t.total_cost || 0)}</p>
-                      <p className="text-xs text-text-secondary">{t.toll_count || 0} peajes</p>
+                      <p className="text-xs text-gray-400">{t.toll_count || 0} peajes</p>
                     </div>
                   </div>
                   {isOpen && cx.length > 0 && (
                     <div className="mt-3 flex flex-col gap-1.5">
                       {cx.map((c, i) => (
-                        <div key={i} className="flex justify-between text-xs bg-surface-secondary rounded-lg px-3 py-2">
+                        <div key={i} className="flex justify-between text-xs bg-white/5 rounded-lg px-3 py-2">
                           <span>
-                            {c.tollNombre} <span className="text-text-secondary">({c.tollRuta})</span>
-                            <span className="text-text-secondary ml-1">{formatTime(c.timestamp)}</span>
+                            {c.tollNombre} <span className="text-gray-400">({c.tollRuta})</span>
+                            <span className="text-gray-400 ml-1">{formatTime(c.timestamp)}</span>
                           </span>
                           <span className="text-primary font-medium">{formatCLP(c.tarifa)}</span>
                         </div>
@@ -520,12 +520,12 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
         {tab === 'growth' && (
           <div className="flex flex-col gap-3">
             {/* Toggle diario / acumulado */}
-            <div className="flex bg-surface-secondary rounded-lg p-0.5">
+            <div className="flex bg-white/5 rounded-lg p-0.5">
               {['dia', 'acumulado'].map(v => (
                 <button
                   key={v}
                   onClick={() => setGrowthView(v)}
-                  className={`flex-1 py-1.5 rounded-md text-[11px] font-medium transition-colors ${growthView === v ? 'bg-primary text-white' : 'text-text-secondary'}`}
+                  className={`flex-1 py-1.5 rounded-md text-[11px] font-medium transition-colors ${growthView === v ? 'bg-primary text-white' : 'text-gray-400'}`}
                 >
                   {v === 'dia' ? 'Por día' : 'Acumulado'}
                 </button>
@@ -540,21 +540,21 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
                 { v: stats?.totalTolls || 0, l: 'Peajes' },
                 { v: stats?.activeTrips || 0, l: 'Activos', green: true },
               ].map(k => (
-                <div key={k.l} className="bg-surface-secondary rounded-lg p-2 text-center">
+                <div key={k.l} className="bg-white/5 rounded-lg p-2 text-center">
                   <p className={`text-xl font-bold ${k.green ? 'text-green-400' : ''}`}>{k.v}</p>
-                  <p className="text-[10px] text-text-secondary">{k.l}</p>
+                  <p className="text-[10px] text-gray-400">{k.l}</p>
                 </div>
               ))}
             </div>
 
             {/* Gasto hero */}
-            <div className="bg-surface-secondary rounded-lg p-3 flex justify-between items-center">
+            <div className="bg-white/5 rounded-lg p-3 flex justify-between items-center">
               <div>
-                <p className="text-[10px] text-text-secondary">Gasto total</p>
+                <p className="text-[10px] text-gray-400">Gasto total</p>
                 <p className="text-2xl font-bold text-primary">{formatCLP(stats?.totalCost || 0)}</p>
               </div>
               <div className="text-right">
-                <p className="text-[10px] text-text-secondary">Prom/viaje</p>
+                <p className="text-[10px] text-gray-400">Prom/viaje</p>
                 <p className="text-lg font-bold">{formatCLP(stats?.avgCostPerTrip || 0)}</p>
               </div>
             </div>
@@ -573,8 +573,8 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
                     const max = Math.max(...sliced.map(d => d[chart.key] || 0), 1);
                     const latest = sliced[sliced.length - 1]?.[chart.key] || 0;
                     return (
-                      <div key={chart.key} className="bg-surface-secondary rounded-lg p-2">
-                        <p className="text-[11px] text-text-secondary">{chart.label}</p>
+                      <div key={chart.key} className="bg-white/5 rounded-lg p-2">
+                        <p className="text-[11px] text-gray-400">{chart.label}</p>
                         <p className="text-[13px] font-bold" style={{ color: chart.color }}>
                           {chart.key.includes('asto') ? formatCLP(latest) : latest}
                         </p>
@@ -590,8 +590,8 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
                           })}
                         </div>
                         <div className="flex justify-between mt-0.5">
-                          <span className="text-[10px] text-text-secondary">{sliced[0]?.date?.split('/').slice(0,2).join('/')}</span>
-                          <span className="text-[10px] text-text-secondary">hoy</span>
+                          <span className="text-[10px] text-gray-400">{sliced[0]?.date?.split('/').slice(0,2).join('/')}</span>
+                          <span className="text-[10px] text-gray-400">hoy</span>
                         </div>
                       </div>
                     );
@@ -601,14 +601,14 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
             })()}
 
             {/* Tabla */}
-            <div className="bg-surface-secondary rounded-lg p-3">
-              <p className="text-[10px] text-text-secondary mb-2">{growthView === 'acumulado' ? 'Acumulado' : 'Por día'}</p>
-              <div className="grid grid-cols-5 gap-0 text-[11px] text-text-secondary border-b border-surface-tertiary pb-1 mb-1 font-medium">
+            <div className="bg-white/5 rounded-lg p-3">
+              <p className="text-[10px] text-gray-400 mb-2">{growthView === 'acumulado' ? 'Acumulado' : 'Por día'}</p>
+              <div className="grid grid-cols-5 gap-0 text-[11px] text-gray-400 border-b border-white/10 pb-1 mb-1 font-medium">
                 <span>Día</span><span className="text-center">Users</span><span className="text-center">Viajes</span><span className="text-center">Peajes</span><span className="text-right">Gasto</span>
               </div>
               {(() => {
                 const src = growthView === 'acumulado' ? cumulativeData : growthData;
-                if (src.length === 0) return <p className="text-text-secondary text-xs text-center py-2">Sin datos</p>;
+                if (src.length === 0) return <p className="text-gray-400 text-xs text-center py-2">Sin datos</p>;
 
                 function pct(curr, prev) {
                   if (!prev || prev === 0) return null;
@@ -616,7 +616,7 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
                 }
                 function PctBadge({ rate }) {
                   if (rate === null) return null;
-                  const color = rate > 0 ? 'text-green-400' : rate < 0 ? 'text-red-400' : 'text-text-secondary';
+                  const color = rate > 0 ? 'text-green-400' : rate < 0 ? 'text-red-400' : 'text-gray-400';
                   return <span className={`${color} text-[10px] ml-0.5`}>{rate > 0 ? '+' : ''}{rate}%</span>;
                 }
 
@@ -632,8 +632,8 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
                   const ptl = prev ? (isCum ? prev.cumTolls : prev.tolls) : 0;
                   const pg = prev ? (isCum ? prev.cumGasto : prev.gasto) : 0;
                   return (
-                    <div key={day.date} className="grid grid-cols-5 gap-0 text-[11px] py-1.5 border-b border-surface-tertiary">
-                      <span className="text-text-secondary">{day.date}</span>
+                    <div key={day.date} className="grid grid-cols-5 gap-0 text-[11px] py-1.5 border-b border-white/10">
+                      <span className="text-gray-400">{day.date}</span>
                       <span className="text-center">
                         {u > 0 ? (isCum ? u : <span className="text-green-400">+{u}</span>) : '—'}
                         <PctBadge rate={pct(u, pu)} />
@@ -658,9 +658,9 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
 
             {/* Usuarios con barras */}
             {users.length > 0 && (
-              <div className="bg-surface-secondary rounded-lg p-3">
+              <div className="bg-white/5 rounded-lg p-3">
                 <div className="flex justify-between items-center mb-2">
-                  <p className="text-[10px] text-text-secondary">Usuarios ({users.length})</p>
+                  <p className="text-[10px] text-gray-400">Usuarios ({users.length})</p>
                   {users.length >= 10 && <span className="text-[11px] bg-yellow-500/20 text-yellow-400 px-1.5 py-0.5 rounded-full">Waitlist</span>}
                 </div>
                 {users.map(u => {
@@ -671,12 +671,12 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
                   return (
                     <div key={u.name} className="flex items-center gap-2 mb-1.5">
                       <span className="text-[11px] w-12 shrink-0 truncate">{u.name}</span>
-                      <div className="flex-1 bg-surface-secondary rounded-full h-5">
+                      <div className="flex-1 bg-white/5 rounded-full h-5">
                         <div className="bg-primary h-5 rounded-full flex items-center px-1.5" style={{ width: `${w}%`, minWidth: 36 }}>
                           <span className="text-[10px] text-white whitespace-nowrap">{formatCLP(cost)}</span>
                         </div>
                       </div>
-                      <span className="text-[11px] text-text-secondary w-6 text-right">{trips}v</span>
+                      <span className="text-[11px] text-gray-400 w-6 text-right">{trips}v</span>
                     </div>
                   );
                 })}
@@ -689,20 +689,20 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
         {tab === 'data' && (
           <div className="flex flex-col gap-4">
             <div>
-              <p className="text-xs text-text-secondary mb-2 font-medium">Usuarios registrados</p>
+              <p className="text-xs text-gray-400 mb-2 font-medium">Usuarios registrados</p>
               <div className="flex flex-wrap gap-2">
                 {stats?.driverList.map(d => (
-                  <span key={d} className="bg-surface-secondary px-3 py-1 rounded-full text-xs">{d}</span>
+                  <span key={d} className="bg-white/5 px-3 py-1 rounded-full text-xs">{d}</span>
                 ))}
               </div>
             </div>
 
             <div>
-              <p className="text-xs text-text-secondary mb-2 font-medium">Últimos 20 cruces de peajes</p>
-              <div className="bg-surface-secondary rounded-xl overflow-hidden">
+              <p className="text-xs text-gray-400 mb-2 font-medium">Últimos 20 cruces de peajes</p>
+              <div className="bg-white/5 rounded-xl overflow-hidden">
                 <table className="w-full text-xs">
                   <thead>
-                    <tr className="border-b border-surface-tertiary text-text-secondary">
+                    <tr className="border-b border-white/10 text-gray-400">
                       <th className="px-3 py-2 text-left">Peaje</th>
                       <th className="px-3 py-2 text-left">Ruta</th>
                       <th className="px-3 py-2 text-right">Tarifa</th>
@@ -711,11 +711,11 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
                   </thead>
                   <tbody>
                     {allCrossings.slice(0, 20).map(c => (
-                      <tr key={c.id} className="border-b border-surface-tertiary">
+                      <tr key={c.id} className="border-b border-white/10">
                         <td className="px-3 py-2">{c.toll_nombre}</td>
-                        <td className="px-3 py-2 text-text-secondary">{c.toll_ruta}</td>
+                        <td className="px-3 py-2 text-gray-400">{c.toll_ruta}</td>
                         <td className="px-3 py-2 text-right text-primary">{formatCLP(c.tarifa)}</td>
-                        <td className="px-3 py-2 text-right text-text-secondary">{formatTime(c.crossed_at)}</td>
+                        <td className="px-3 py-2 text-right text-gray-400">{formatTime(c.crossed_at)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -724,8 +724,8 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
             </div>
 
             <div>
-              <p className="text-xs text-text-secondary mb-2 font-medium">Base de datos</p>
-              <div className="bg-surface-secondary rounded-xl p-3 text-xs text-text-secondary">
+              <p className="text-xs text-gray-400 mb-2 font-medium">Base de datos</p>
+              <div className="bg-white/5 rounded-xl p-3 text-xs text-gray-400">
                 <p>live_trips: {allTrips.length} registros</p>
                 <p>live_crossings: {allCrossings.length} registros</p>
                 <p>Supabase: nttnryildsxllxqfkkvz</p>
