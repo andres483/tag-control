@@ -128,50 +128,82 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
     }
   }, [selectedTripId, allCrossings.length]);
 
-  // Init map
+  const [mapsReady, setMapsReady] = useState(!!window.google?.maps);
+
+  // Load Google Maps script and wait for it
   useEffect(() => {
-    if (tab !== 'live' || !mapRef.current || mapInstanceRef.current) return;
-    if (!window.google?.maps) return;
+    if (window.google?.maps) {
+      setMapsReady(true);
+      return;
+    }
+    const key = import.meta.env.VITE_GOOGLE_MAPS_KEY;
+    if (!key) return;
+
+    const existing = document.querySelector('script[src*="maps.googleapis.com"]');
+    if (existing) {
+      existing.addEventListener('load', () => setMapsReady(true));
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${key}`;
+    script.async = true;
+    script.onload = () => setMapsReady(true);
+    document.head.appendChild(script);
+  }, []);
+
+  // Init map when ready
+  useEffect(() => {
+    if (!mapsReady || !mapRef.current) return;
+    if (mapInstanceRef.current) return;
+
     mapInstanceRef.current = new google.maps.Map(mapRef.current, {
       center: { lat: -33.42, lng: -70.65 },
       zoom: 11,
       disableDefaultUI: true,
       zoomControl: true,
-      styles: [{ featureType: 'poi', stylers: [{ visibility: 'off' }] }],
+      mapTypeControl: false,
+      styles: [
+        { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+        { featureType: 'transit', stylers: [{ visibility: 'off' }] },
+      ],
     });
-  }, [tab]);
+  }, [mapsReady, tab]);
 
   // Update map markers
   useEffect(() => {
     if (!mapInstanceRef.current) return;
     markersRef.current.forEach(m => m.setMap(null));
     markersRef.current = [];
+
     for (const trip of liveTrips) {
-      if (trip.lat && trip.lng) {
-        const marker = new google.maps.Marker({
-          position: { lat: trip.lat, lng: trip.lng },
-          map: mapInstanceRef.current,
-          title: trip.driver,
-          label: { text: trip.driver?.charAt(0) || '?', color: '#fff', fontWeight: 'bold' },
-        });
-        markersRef.current.push(marker);
-      }
+      if (!trip.lat || !trip.lng) continue;
+      const marker = new google.maps.Marker({
+        position: { lat: trip.lat, lng: trip.lng },
+        map: mapInstanceRef.current,
+        title: trip.driver,
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 12,
+          fillColor: '#5C6B5A',
+          fillOpacity: 1,
+          strokeColor: '#fff',
+          strokeWeight: 3,
+        },
+        label: { text: trip.driver?.charAt(0)?.toUpperCase() || '?', color: '#fff', fontWeight: 'bold', fontSize: '12px' },
+      });
+      markersRef.current.push(marker);
     }
+
     if (liveTrips.length === 1 && liveTrips[0].lat) {
       mapInstanceRef.current.panTo({ lat: liveTrips[0].lat, lng: liveTrips[0].lng });
+      mapInstanceRef.current.setZoom(13);
+    } else if (liveTrips.length > 1) {
+      const bounds = new google.maps.LatLngBounds();
+      liveTrips.forEach(t => { if (t.lat && t.lng) bounds.extend({ lat: t.lat, lng: t.lng }); });
+      mapInstanceRef.current.fitBounds(bounds);
     }
-  }, [liveTrips]);
-
-  // Load Google Maps script
-  useEffect(() => {
-    if (window.google?.maps) return;
-    const key = import.meta.env.VITE_GOOGLE_MAPS_KEY;
-    if (!key) return;
-    const script = document.createElement('script');
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${key}`;
-    script.async = true;
-    document.head.appendChild(script);
-  }, []);
+  }, [liveTrips, mapsReady]);
 
   const tabs = [
     { id: 'live', label: 'En vivo' },
@@ -216,38 +248,72 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
           </div>
         )}
 
-        {/* TAB: En vivo */}
+        {/* TAB: En vivo — estilo Uber */}
         {tab === 'live' && (
-          <div className="flex flex-col gap-4">
-            <div ref={mapRef} className="w-full h-64 rounded-xl bg-cream/5" />
+          <div className="flex flex-col gap-0 -mx-4 -mt-4">
+            {/* Mapa grande */}
+            <div className="relative">
+              <div ref={mapRef} className="w-full h-[50vh] bg-cream/5" />
+              {!mapsReady && (
+                <div className="absolute inset-0 flex items-center justify-center bg-negro/50">
+                  <div className="w-8 h-8 border-4 border-cream/20 border-t-primary rounded-full animate-spin" />
+                </div>
+              )}
+              {liveTrips.length === 0 && mapsReady && (
+                <div className="absolute inset-0 flex items-center justify-center bg-negro/60">
+                  <div className="text-center">
+                    <p className="text-cream font-medium">Sin viajes activos</p>
+                    <p className="text-tierra text-xs mt-1">Los viajes aparecerán aquí en tiempo real</p>
+                  </div>
+                </div>
+              )}
+              {/* Badge de cantidad activa */}
+              {liveTrips.length > 0 && (
+                <div className="absolute top-3 left-3 bg-negro/80 backdrop-blur-sm px-3 py-1.5 rounded-full">
+                  <span className="text-xs text-cream font-medium">
+                    <span className="inline-block w-2 h-2 bg-green-400 rounded-full animate-pulse mr-1.5" />
+                    {liveTrips.length} en ruta
+                  </span>
+                </div>
+              )}
+            </div>
 
-            {liveTrips.length === 0 ? (
-              <p className="text-center text-tierra text-sm py-4">Sin viajes activos</p>
-            ) : (
-              liveTrips.map(t => {
+            {/* Cards de viajes activos — overlay */}
+            <div className="px-4 -mt-6 relative z-10 flex flex-col gap-3">
+              {liveTrips.map(t => {
                 const ago = Math.round((Date.now() - new Date(t.updated_at).getTime()) / 1000);
+                const isRecent = ago < 30;
                 return (
-                  <div key={t.id} className="bg-cream/5 rounded-xl p-4">
+                  <div key={t.id} className="bg-cream/10 backdrop-blur-md rounded-2xl p-4 border border-cream/10">
                     <div className="flex justify-between items-start">
-                      <div>
-                        <p className="font-bold">{t.driver}</p>
-                        <p className="text-xs text-tierra">
-                          {t.lat?.toFixed(4)}, {t.lng?.toFixed(4)} &middot; {Math.round(t.speed || 0)} km/h
-                        </p>
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
+                          <span className="text-cream font-bold">{t.driver?.charAt(0)?.toUpperCase()}</span>
+                        </div>
+                        <div>
+                          <p className="font-bold text-cream">{t.driver}</p>
+                          <p className="text-xs text-tierra flex items-center gap-1">
+                            <span className={`inline-block w-1.5 h-1.5 rounded-full ${isRecent ? 'bg-green-400' : 'bg-yellow-400'}`} />
+                            {isRecent ? 'En vivo' : `Hace ${ago}s`}
+                            &middot; {Math.round(t.speed || 0)} km/h
+                          </p>
+                        </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold text-primary">{formatCLP(t.total_cost || 0)}</p>
-                        <p className="text-xs text-tierra">
-                          {t.toll_count || 0} peajes &middot;
-                          <span className={ago < 30 ? ' text-green-400' : ' text-yellow-400'}> {ago}s</span>
-                        </p>
+                        <p className="text-2xl font-bold text-primary">{formatCLP(t.total_cost || 0)}</p>
+                        <p className="text-xs text-tierra">{t.toll_count || 0} peajes</p>
                       </div>
                     </div>
-                    {t.last_toll && <p className="text-xs text-hongo mt-1">Último: {t.last_toll}</p>}
+                    {t.last_toll && (
+                      <div className="mt-3 pt-3 border-t border-cream/10 flex justify-between items-center">
+                        <span className="text-xs text-tierra">Último peaje</span>
+                        <span className="text-xs text-cream font-medium">{t.last_toll}</span>
+                      </div>
+                    )}
                   </div>
                 );
-              })
-            )}
+              })}
+            </div>
           </div>
         )}
 
