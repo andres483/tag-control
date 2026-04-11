@@ -21,64 +21,114 @@
       "radio_deteccion_m": 250
     },
     {
-      "id": "costanera-lo-saldes",
+      "id": "cn-p9",
+      "nombre": "Pórtico Vespucio-Ruta68",
+      "ruta": "Costanera Norte",
+      "tarifa_semana": 535,
+      "tarifa_finde": 535,
+      "lat": -33.41866,
+      "lng": -70.79190,
+      "radio_deteccion_m": 300
+    },
+    {
+      "id": "cn-p6.2",
+      "nombre": "Pórtico Petersen",
+      "ruta": "Costanera Norte",
+      "tarifa_semana": 365,
+      "tarifa_finde": 365,
+      "lat": -33.41209,
+      "lng": -70.75662,
+      "radio_deteccion_m": 300
+    },
+    {
+      "id": "cn-p6.1",
+      "nombre": "Pórtico Carrascal",
+      "ruta": "Costanera Norte",
+      "tarifa_semana": 240,
+      "tarifa_finde": 240,
+      "lat": -33.41185,
+      "lng": -70.73176,
+      "radio_deteccion_m": 300
+    },
+    {
+      "id": "cn-p5",
+      "nombre": "Pórtico Vivaceta",
+      "ruta": "Costanera Norte",
+      "tarifa_semana": 716,
+      "tarifa_finde": 716,
+      "lat": -33.40739,
+      "lng": -70.70977,
+      "radio_deteccion_m": 300
+    },
+    {
+      "id": "cn-p3",
       "nombre": "Pórtico Lo Saldes",
       "ruta": "Costanera Norte",
-      "tarifa_semana": 1900,
-      "tarifa_finde": 1900,
-      "lat": -33.399559,
-      "lng": -70.605765,
+      "tarifa_semana": 719,
+      "tarifa_finde": 719,
+      "lat": -33.43341,
+      "lng": -70.64671,
       "radio_deteccion_m": 300
     },
     {
-      "id": "costanera-vitacura",
-      "nombre": "Pórtico Vitacura",
+      "id": "cn-p2.2",
+      "nombre": "Pórtico Centenario",
       "ruta": "Costanera Norte",
-      "tarifa_semana": 1600,
-      "tarifa_finde": 1600,
-      "lat": -33.381834,
-      "lng": -70.588337,
+      "tarifa_semana": 264,
+      "tarifa_finde": 264,
+      "lat": -33.41544,
+      "lng": -70.60777,
       "radio_deteccion_m": 300
     },
     {
-      "id": "costanera-kennedy",
-      "nombre": "Pórtico Kennedy",
+      "id": "cn-p2.1",
+      "nombre": "Pórtico Gran Vía",
       "ruta": "Costanera Norte",
-      "tarifa_semana": 2300,
-      "tarifa_finde": 2300,
-      "lat": -33.402187,
-      "lng": -70.578672,
-      "radio_deteccion_m": 400
+      "tarifa_semana": 426,
+      "tarifa_finde": 426,
+      "lat": -33.39479,
+      "lng": -70.60356,
+      "radio_deteccion_m": 300
     },
     {
-      "id": "vespucio-norte-independencia",
-      "nombre": "Pórtico Independencia",
-      "ruta": "Vespucio Norte Express",
-      "tarifa_semana": 1400,
-      "tarifa_finde": 1400,
-      "lat": -33.366221,
-      "lng": -70.678476,
-      "radio_deteccion_m": 250
+      "id": "cn-p1",
+      "nombre": "Pórtico San Francisco",
+      "ruta": "Costanera Norte",
+      "tarifa_semana": 449,
+      "tarifa_finde": 449,
+      "lat": -33.37725,
+      "lng": -70.56801,
+      "radio_deteccion_m": 300
     },
     {
-      "id": "vespucio-sur-la-florida",
-      "nombre": "Pórtico La Florida",
-      "ruta": "Vespucio Sur",
-      "tarifa_semana": 1300,
-      "tarifa_finde": 1300,
-      "lat": -33.498885,
-      "lng": -70.587044,
-      "radio_deteccion_m": 250
+      "id": "cn-p0",
+      "nombre": "Pórtico Padre Arteaga",
+      "ruta": "Costanera Norte",
+      "tarifa_semana": 150,
+      "tarifa_finde": 150,
+      "lat": -33.37171,
+      "lng": -70.52466,
+      "radio_deteccion_m": 300
     },
     {
-      "id": "vespucio-sur-departamental",
-      "nombre": "Pórtico Departamental",
-      "ruta": "Vespucio Sur",
-      "tarifa_semana": 1200,
-      "tarifa_finde": 1200,
-      "lat": -33.502492,
-      "lng": -70.654640,
-      "radio_deteccion_m": 250
+      "id": "cn-p7",
+      "nombre": "Pórtico Estoril (Kennedy)",
+      "ruta": "Costanera Norte - Kennedy",
+      "tarifa_semana": 250,
+      "tarifa_finde": 250,
+      "lat": -33.39782,
+      "lng": -70.57071,
+      "radio_deteccion_m": 300
+    },
+    {
+      "id": "cn-p8",
+      "nombre": "Pórtico Las Tranqueras (Kennedy)",
+      "ruta": "Costanera Norte - Kennedy",
+      "tarifa_semana": 584,
+      "tarifa_finde": 584,
+      "lat": -33.38401,
+      "lng": -70.55344,
+      "radio_deteccion_m": 300
     }
   ]
 }
