@@ -8,6 +8,7 @@ const ADMIN_USER = 'Andres';
 
 export default function History() {
   const { user } = useUser();
+  const [expandedTrip, setExpandedTrip] = useState(null);
   const isAdmin = user.name === ADMIN_USER;
   const [allTrips, setAllTrips] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -100,7 +101,7 @@ export default function History() {
             <button
               key={d}
               onClick={() => setFilterDriver(d)}
-              className={`shrink-0 px-4 py-2 rounded-full text-[13px] font-medium transition-all ${
+              className={`shrink-0 px-5 py-2.5 rounded-full text-[14px] font-medium transition-all min-h-[44px] ${
                 filterDriver === d
                   ? 'bg-primary text-white shadow-sm'
                   : 'bg-surface-secondary text-text-secondary'
@@ -121,15 +122,15 @@ export default function History() {
         <div className="flex gap-6 mt-4">
           <div>
             <p className="text-[20px] font-bold">{stats.totalViajes}</p>
-            <p className="text-[11px] text-white/50">viajes</p>
+            <p className="text-[13px] text-white/60">viajes</p>
           </div>
           <div>
             <p className="text-[20px] font-bold">{stats.totalPeajes}</p>
-            <p className="text-[11px] text-white/50">peajes</p>
+            <p className="text-[13px] text-white/60">peajes</p>
           </div>
           <div>
             <p className="text-[20px] font-bold">{formatCLP(stats.promedioPorViaje)}</p>
-            <p className="text-[11px] text-white/50">promedio</p>
+            <p className="text-[13px] text-white/60">promedio</p>
           </div>
         </div>
       </div>
@@ -149,31 +150,48 @@ export default function History() {
       {/* Viajes */}
       <div className="flex flex-col gap-2">
         <h2 className="text-[13px] font-semibold text-text-secondary uppercase tracking-wide px-1">Recientes</h2>
-        {trips.map((trip) => (
-          <div key={trip.id} className="bg-surface-secondary rounded-2xl p-4">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-[15px] font-semibold text-text">
-                  {(trip.routes || []).join(' → ') || 'Viaje'}
-                </p>
-                <p className="text-[12px] text-text-tertiary mt-0.5">
-                  {trip.driver && <span className="font-medium text-text-secondary">{trip.driver}</span>}
-                  {trip.driver && ' · '}
-                  {formatDate(trip.startTime)} · {formatTime(trip.startTime)}
-                </p>
+        {trips.map((trip) => {
+          const cx = trip.crossings || [];
+          const isOpen = expandedTrip === trip.id;
+          const tripName = (trip.routes || []).length > 0
+            ? trip.routes.join(' → ')
+            : cx.length > 0
+              ? `${cx[0].tollNombre} → ${cx[cx.length - 1].tollNombre}`
+              : 'Viaje';
+          return (
+            <button
+              key={trip.id}
+              onClick={() => setExpandedTrip(isOpen ? null : trip.id)}
+              className="bg-surface-secondary rounded-2xl p-4 text-left w-full transition-colors active:bg-surface-tertiary/50"
+            >
+              <div className="flex justify-between items-start">
+                <div className="flex-1 min-w-0 pr-3">
+                  <p className="text-[15px] font-semibold text-text truncate">{tripName}</p>
+                  <p className="text-[13px] text-text-tertiary mt-0.5">
+                    {trip.driver && <span className="font-medium text-text-secondary">{trip.driver}</span>}
+                    {trip.driver && ' · '}
+                    {formatDate(trip.startTime)} · {formatTime(trip.startTime)}
+                    {' · '}{cx.length} peajes
+                  </p>
+                </div>
+                <div className="text-right shrink-0">
+                  <span className="text-[17px] font-bold text-primary">{formatCLP(trip.totalCost)}</span>
+                  <p className="text-[11px] text-text-tertiary">{isOpen ? '▲' : '▼'}</p>
+                </div>
               </div>
-              <span className="text-[17px] font-bold text-primary">{formatCLP(trip.totalCost)}</span>
-            </div>
-            {(trip.crossings || []).length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-1.5">
-                {trip.crossings.map((c, i) => (
-                  <span key={i} className="text-[11px] bg-surface-tertiary/50 px-2 py-1 rounded-lg text-text-secondary">
-                    {c.tollNombre}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
+              {isOpen && cx.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-surface-tertiary flex flex-col gap-2">
+                  {cx.map((c, i) => (
+                    <div key={i} className="flex justify-between text-[13px]">
+                      <span className="text-text-secondary">{c.tollNombre}</span>
+                      <span className="text-primary font-medium">{formatCLP(c.tarifa)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </button>
+          );
+        })
         ))}
       </div>
 

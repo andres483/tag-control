@@ -103,21 +103,21 @@ export default function PlanRoute() {
       {/* Inputs con autocomplete */}
       <div className="flex flex-col gap-3">
         <div>
-          <label className="text-xs font-medium text-text-secondary mb-1 block">Origen</label>
+          <label className="text-[14px] font-medium text-text-secondary mb-1 block">Origen</label>
           <input
             ref={originRef}
             type="text"
             placeholder="Ej: Algarrobo"
-            className="w-full bg-surface-secondary border border-surface-tertiary rounded-xl px-4 py-3 text-sm text-text placeholder-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/30"
+            className="w-full bg-surface-secondary border border-surface-tertiary rounded-xl px-4 py-3.5 text-[16px] text-text placeholder-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
         </div>
         <div>
-          <label className="text-xs font-medium text-text-secondary mb-1 block">Destino</label>
+          <label className="text-[14px] font-medium text-text-secondary mb-1 block">Destino</label>
           <input
             ref={destRef}
             type="text"
             placeholder="Ej: Santiago Centro"
-            className="w-full bg-surface-secondary border border-surface-tertiary rounded-xl px-4 py-3 text-sm text-text placeholder-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/30"
+            className="w-full bg-surface-secondary border border-surface-tertiary rounded-xl px-4 py-3.5 text-[16px] text-text placeholder-text-tertiary focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
         </div>
       </div>
@@ -126,19 +126,17 @@ export default function PlanRoute() {
       <button
         onClick={handleSearch}
         disabled={loading}
-        className={`w-full py-3.5 rounded-xl font-semibold text-white transition-colors ${
-          loading
-            ? 'bg-tierra/40'
-            : 'bg-text active:bg-text/80'
+        className={`w-full py-[16px] rounded-2xl font-semibold text-[17px] text-white transition-colors ${
+          loading ? 'bg-text-tertiary' : 'bg-primary active:bg-primary-dark'
         }`}
       >
-        {loading ? 'Calculando ruta...' : 'Calcular peajes'}
+        {loading ? 'Calculando...' : 'Ver peajes de esta ruta'}
       </button>
 
       {/* Rutas rápidas */}
       {!routes && !loading && (
         <div className="flex flex-col gap-2">
-          <p className="text-xs font-medium text-text-secondary px-1">Rutas frecuentes</p>
+          <p className="text-[13px] font-medium text-text-secondary px-1">Rutas frecuentes</p>
           {quickRoutes.map((qr) => (
             <button
               key={qr.label}
@@ -147,10 +145,12 @@ export default function PlanRoute() {
                 setDestination(qr.to);
                 if (originRef.current) originRef.current.value = qr.from;
                 if (destRef.current) destRef.current.value = qr.to;
+                // Auto-search
+                setTimeout(() => handleSearch(), 100);
               }}
-              className="bg-surface-secondary rounded-xl px-4 py-3 text-left active:bg-surface-secondary/70 transition-colors"
+              className="bg-surface-secondary rounded-2xl px-4 py-3.5 text-left active:bg-surface-tertiary/50 transition-colors"
             >
-              <p className="text-sm font-medium text-text">{qr.label}</p>
+              <p className="text-[15px] font-medium text-text">{qr.label}</p>
             </button>
           ))}
         </div>

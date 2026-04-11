@@ -189,7 +189,7 @@ export default function Home() {
         {budget && (
           <div className="bg-surface-secondary rounded-2xl p-5">
             <div className="flex justify-between items-center mb-2">
-              <p className="text-[13px] font-semibold text-text-secondary uppercase tracking-wide">Este mes</p>
+              <p className="text-[13px] font-semibold text-text-secondary uppercase tracking-wide">Gasto en peajes este mes</p>
               <button
                 onClick={() => { setEditingBudget(!editingBudget); setBudgetInput(budget.monthly_limit > 0 ? String(budget.monthly_limit) : ''); }}
                 className="text-[12px] text-primary font-medium"
@@ -216,16 +216,20 @@ export default function Home() {
               </>
             )}
             {editingBudget && (
-              <div className="mt-3 flex gap-2">
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  value={budgetInput}
-                  onChange={(e) => setBudgetInput(e.target.value)}
-                  placeholder="Ej: 50000"
-                  className="flex-1 bg-surface rounded-xl px-3 py-2 text-[15px] text-text border border-surface-tertiary focus:outline-none focus:border-primary"
-                />
-                <button onClick={saveBudget} className="px-4 py-2 bg-primary text-white rounded-xl text-[14px] font-semibold">OK</button>
+              <div className="mt-3">
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    value={budgetInput}
+                    onChange={(e) => setBudgetInput(e.target.value)}
+                    placeholder="Ej: 50000"
+                    className="flex-1 bg-surface rounded-xl px-3 py-3 text-[16px] text-text border border-surface-tertiary focus:outline-none focus:border-primary"
+                  />
+                  <button onClick={saveBudget} className="px-5 py-3 bg-primary text-white rounded-xl text-[14px] font-semibold">OK</button>
+                  <button onClick={() => setEditingBudget(false)} className="px-3 py-3 bg-surface-secondary text-text-tertiary rounded-xl text-[14px]">X</button>
+                </div>
+                <p className="text-[12px] text-text-tertiary mt-1">Meta mensual en pesos (ej: $50.000)</p>
               </div>
             )}
           </div>
@@ -277,9 +281,9 @@ export default function Home() {
             {trip.isActive ? 'Viaje en curso' : 'Viaje terminado'}
           </span>
           {trip.isActive && (
-            <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-white/20">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-300 animate-pulse" />
-              GPS
+            <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold px-3 py-1 rounded-full bg-white/20">
+              <span className="w-2 h-2 rounded-full bg-green-300 animate-pulse" />
+              GPS activo
             </span>
           )}
         </div>
@@ -347,12 +351,12 @@ export default function Home() {
         </div>
       )}
 
-      {/* Spinner */}
+      {/* Esperando peajes */}
       {trip.isActive && trip.crossings.length === 0 && (
         <div className="text-center py-8">
           <div className="w-10 h-10 mx-auto border-[3px] border-surface-tertiary border-t-primary rounded-full animate-spin" />
-          <p className="text-[14px] text-text mt-4">Buscando peajes...</p>
-          <p className="text-[12px] text-text-tertiary mt-1">Suena una alerta al cruzar</p>
+          <p className="text-[15px] text-text mt-4">Conduciendo...</p>
+          <p className="text-[13px] text-text-tertiary mt-1">Te avisamos con un sonido cuando cruces un peaje</p>
         </div>
       )}
 
@@ -370,9 +374,10 @@ export default function Home() {
       {!trip.isActive && trip.crossings.length > 0 && (
         <div className="bg-surface-secondary rounded-2xl p-4">
           <div className="flex justify-between items-center">
-            <span className="text-[14px] text-text-secondary">Ida y vuelta</span>
+            <span className="text-[14px] text-text-secondary">Ida y vuelta (estimado)</span>
             <span className="text-[17px] font-bold text-text">{formatCLP(trip.totalCost * 2)}</span>
           </div>
+          <p className="text-[11px] text-text-tertiary mt-1">La tarifa de vuelta puede variar según el horario</p>
         </div>
       )}
     </div>

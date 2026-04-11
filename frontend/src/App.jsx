@@ -17,7 +17,7 @@ class ErrorBoundary extends Component {
       return (
         <div className="flex flex-col items-center justify-center min-h-[50vh] p-8 text-center">
           <p className="text-lg font-semibold text-text mb-2">Algo salió mal</p>
-          <p className="text-sm text-text-secondary mb-4">{this.state.error.message}</p>
+          <p className="text-sm text-text-secondary mb-4">Intenta recargar la página</p>
           <button
             onClick={() => window.location.reload()}
             className="px-6 py-3 bg-primary text-white rounded-xl font-semibold"
