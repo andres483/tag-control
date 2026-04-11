@@ -295,10 +295,9 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
 
   const tabs = [
     { id: 'live', label: 'En vivo' },
-    { id: 'trips', label: 'Viajes' },
     { id: 'growth', label: 'Growth' },
-    { id: 'users', label: 'Usuarios' },
-    { id: 'data', label: 'Datos' },
+    { id: 'trips', label: 'Viajes' },
+    { id: 'data', label: 'DB' },
   ];
 
   return (
@@ -516,10 +515,10 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
           </div>
         )}
 
-        {/* TAB: Growth — una sola pantalla, compacto */}
+        {/* TAB: Growth — todo en una pantalla */}
         {tab === 'growth' && (
           <div className="flex flex-col gap-3">
-            {/* Hero KPIs — 1 fila */}
+            {/* KPIs */}
             <div className="grid grid-cols-4 gap-2">
               {[
                 { v: stats?.registeredUsers || 0, l: 'Usuarios' },
@@ -534,50 +533,62 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
               ))}
             </div>
 
-            {/* Revenue */}
+            {/* Revenue hero */}
             <div className="bg-cream/5 rounded-lg p-3 flex justify-between items-center">
               <div>
-                <p className="text-[10px] text-tierra">Recaudación total</p>
+                <p className="text-[10px] text-tierra">Revenue total</p>
                 <p className="text-2xl font-bold text-primary">{formatCLP(stats?.totalCost || 0)}</p>
               </div>
               <div className="text-right">
-                <p className="text-[10px] text-tierra">Promedio/viaje</p>
+                <p className="text-[10px] text-tierra">Prom/viaje</p>
                 <p className="text-lg font-bold">{formatCLP(stats?.avgCostPerTrip || 0)}</p>
               </div>
             </div>
 
-            {/* Sparkline por día — barras verticales */}
+            {/* 3 gráficos de barras: Usuarios, Viajes, Revenue */}
+            {growthData.length > 0 && (
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { key: 'newUsers', label: 'Usuarios', color: '#22c55e' },
+                  { key: 'trips', label: 'Viajes', color: '#3b82f6' },
+                  { key: 'revenue', label: 'Revenue', color: '#2D6A4F', isMoney: true },
+                ].map(chart => {
+                  const max = Math.max(...growthData.map(d => d[chart.key] || 0), 1);
+                  return (
+                    <div key={chart.key} className="bg-cream/5 rounded-lg p-2">
+                      <p className="text-[9px] text-tierra mb-1">{chart.label}</p>
+                      <div className="flex items-end gap-[2px] h-14">
+                        {growthData.slice(-7).map((day) => {
+                          const val = day[chart.key] || 0;
+                          const h = Math.max((val / max) * 100, 3);
+                          return (
+                            <div key={day.date} className="flex-1 flex flex-col items-center">
+                              <div className="w-full rounded-sm" style={{ height: `${h}%`, background: chart.color, minHeight: 2 }} />
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div className="flex justify-between mt-1">
+                        <span className="text-[7px] text-tierra">{growthData.slice(-7)[0]?.date?.split('/').slice(0,2).join('/')}</span>
+                        <span className="text-[7px] text-tierra">hoy</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Tabla diaria */}
             <div className="bg-cream/5 rounded-lg p-3">
-              <p className="text-[10px] text-tierra mb-2">Revenue por día</p>
+              <p className="text-[10px] text-tierra mb-2">Detalle por día</p>
+              <div className="grid grid-cols-5 gap-0 text-[9px] text-tierra border-b border-cream/10 pb-1 mb-1 font-medium">
+                <span>Día</span><span className="text-center">+Users</span><span className="text-center">Viajes</span><span className="text-center">Peajes</span><span className="text-right">Revenue</span>
+              </div>
               {growthData.length === 0 ? (
                 <p className="text-tierra text-xs text-center py-2">Sin datos</p>
               ) : (
-                <div className="flex items-end gap-1 h-20">
-                  {growthData.map((day) => {
-                    const max = Math.max(...growthData.map(d => d.revenue), 1);
-                    const h = Math.max((day.revenue / max) * 100, 4);
-                    return (
-                      <div key={day.date} className="flex-1 flex flex-col items-center gap-1">
-                        <div className="w-full bg-primary rounded-sm" style={{ height: `${h}%` }} title={`${day.date}: ${formatCLP(day.revenue)}`} />
-                        <span className="text-[8px] text-tierra leading-none">{day.date.split('/')[0]}/{day.date.split('/')[1]}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* Usuarios + viajes por día — tabla compacta */}
-            <div className="bg-cream/5 rounded-lg p-3">
-              <p className="text-[10px] text-tierra mb-2">Desglose diario</p>
-              <div className="grid grid-cols-5 gap-0 text-[10px] text-tierra border-b border-cream/10 pb-1 mb-1">
-                <span>Día</span><span className="text-center">Usuarios</span><span className="text-center">Viajes</span><span className="text-center">Peajes</span><span className="text-right">Revenue</span>
-              </div>
-              {growthData.length === 0 ? (
-                <p className="text-tierra text-xs text-center py-2">—</p>
-              ) : (
                 growthData.map(day => (
-                  <div key={day.date} className="grid grid-cols-5 gap-0 text-xs py-1 border-b border-cream/5">
+                  <div key={day.date} className="grid grid-cols-5 gap-0 text-[11px] py-1.5 border-b border-cream/5">
                     <span className="text-tierra">{day.date}</span>
                     <span className="text-center">{day.newUsers > 0 ? <span className="text-green-400">+{day.newUsers}</span> : '—'}</span>
                     <span className="text-center">{day.trips || '—'}</span>
@@ -588,103 +599,30 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
               )}
             </div>
 
-            {/* Top usuarios — compact */}
-            {stats?.driverList?.length > 0 && (
+            {/* Usuarios con barras */}
+            {users.length > 0 && (
               <div className="bg-cream/5 rounded-lg p-3">
-                <p className="text-[10px] text-tierra mb-2">Por usuario</p>
-                {[...stats.driverList]
-                  .sort((a, b) => (stats.costByDriver[b] || 0) - (stats.costByDriver[a] || 0))
-                  .map((d) => {
-                    const max = Math.max(...stats.driverList.map(x => stats.costByDriver[x] || 0), 1);
-                    const w = Math.max(((stats.costByDriver[d] || 0) / max) * 100, 4);
-                    return (
-                      <div key={d} className="flex items-center gap-2 mb-1.5">
-                        <span className="text-xs w-14 shrink-0 truncate">{d}</span>
-                        <div className="flex-1 bg-cream/5 rounded-full h-4">
-                          <div className="bg-primary h-4 rounded-full flex items-center px-1.5" style={{ width: `${w}%`, minWidth: 40 }}>
-                            <span className="text-[9px] text-cream whitespace-nowrap">{formatCLP(stats.costByDriver[d] || 0)}</span>
-                          </div>
+                <div className="flex justify-between items-center mb-2">
+                  <p className="text-[10px] text-tierra">Usuarios ({users.length})</p>
+                  {users.length >= 10 && <span className="text-[9px] bg-yellow-500/20 text-yellow-400 px-1.5 py-0.5 rounded-full">Waitlist</span>}
+                </div>
+                {users.map(u => {
+                  const cost = stats?.costByDriver?.[u.name] || 0;
+                  const trips = stats?.tripsByDriver?.[u.name] || 0;
+                  const max = Math.max(...(stats?.driverList || []).map(x => stats?.costByDriver?.[x] || 0), 1);
+                  const w = Math.max((cost / max) * 100, 4);
+                  return (
+                    <div key={u.name} className="flex items-center gap-2 mb-1.5">
+                      <span className="text-[11px] w-12 shrink-0 truncate">{u.name}</span>
+                      <div className="flex-1 bg-cream/5 rounded-full h-5">
+                        <div className="bg-primary h-5 rounded-full flex items-center px-1.5" style={{ width: `${w}%`, minWidth: 36 }}>
+                          <span className="text-[8px] text-white whitespace-nowrap">{formatCLP(cost)}</span>
                         </div>
-                        <span className="text-[10px] text-tierra w-8 text-right">{stats.tripsByDriver[d]}v</span>
                       </div>
-                    );
-                  })}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* TAB: Usuarios */}
-        {tab === 'users' && (
-          <div className="flex flex-col gap-4">
-            <div className="bg-cream/5 rounded-xl p-4">
-              <div className="flex justify-between items-center mb-3">
-                <p className="text-sm font-medium">Usuarios registrados ({users.length})</p>
-                {users.length >= 10 && (
-                  <span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded-full">Waitlist pronto</span>
-                )}
-              </div>
-              {users.length === 0 ? (
-                <p className="text-tierra text-sm">Sin usuarios registrados aún</p>
-              ) : (
-                <div className="flex flex-col gap-2">
-                  {users.map(u => (
-                    <div key={u.name} className="flex justify-between items-center bg-cream/5 rounded-lg px-3 py-2">
-                      <div>
-                        <p className="font-medium text-sm">{u.name}</p>
-                        <p className="text-xs text-tierra">{formatDate(u.created_at)}</p>
-                      </div>
-                      <div className="text-right text-xs">
-                        <p>{stats?.tripsByDriver?.[u.name] || 0} viajes</p>
-                        <p className="text-primary">{formatCLP(stats?.costByDriver?.[u.name] || 0)}</p>
-                      </div>
+                      <span className="text-[9px] text-tierra w-6 text-right">{trips}v</span>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Métricas de producto */}
-            <div className="bg-cream/5 rounded-xl p-4">
-              <p className="text-sm font-medium mb-3">Métricas de producto</p>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-cream/5 rounded-lg p-3">
-                  <p className="text-lg font-bold">{formatCLP(stats?.avgCostPerTrip || 0)}</p>
-                  <p className="text-xs text-tierra">Promedio por viaje</p>
-                </div>
-                <div className="bg-cream/5 rounded-lg p-3">
-                  <p className="text-lg font-bold">{stats?.avgTollsPerTrip || 0}</p>
-                  <p className="text-xs text-tierra">Peajes por viaje</p>
-                </div>
-                <div className="bg-cream/5 rounded-lg p-3">
-                  <p className="text-lg font-bold">{stats?.registeredUsers || 0}</p>
-                  <p className="text-xs text-tierra">Usuarios totales</p>
-                </div>
-                <div className="bg-cream/5 rounded-lg p-3">
-                  <p className="text-lg font-bold">{stats?.totalTolls || 0}</p>
-                  <p className="text-xs text-tierra">Peajes detectados</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Top conductores */}
-            {stats?.driverList?.length > 0 && (
-              <div className="bg-cream/5 rounded-xl p-4">
-                <p className="text-sm font-medium mb-3">Ranking por gasto</p>
-                {[...stats.driverList]
-                  .sort((a, b) => (stats.costByDriver[b] || 0) - (stats.costByDriver[a] || 0))
-                  .map((d, i) => (
-                    <div key={d} className="flex justify-between items-center py-2 border-b border-cream/5 last:border-0">
-                      <span className="text-sm">
-                        <span className="text-tierra mr-2">#{i + 1}</span>
-                        {d}
-                      </span>
-                      <span className="text-sm">
-                        <span className="text-primary font-medium">{formatCLP(stats.costByDriver[d] || 0)}</span>
-                        <span className="text-tierra ml-2">({stats.tripsByDriver[d] || 0} viajes)</span>
-                      </span>
-                    </div>
-                  ))}
+                  );
+                })}
               </div>
             )}
           </div>
