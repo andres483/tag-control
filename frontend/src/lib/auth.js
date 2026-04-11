@@ -2,9 +2,6 @@ import { supabase } from './supabase';
 
 const AUTH_KEY = 'tagcontrol_auth';
 
-/**
- * Registrar usuario nuevo (nombre + PIN)
- */
 export async function registerUser(name, pin) {
   const { error } = await supabase.from('users').insert({
     name,
@@ -12,16 +9,14 @@ export async function registerUser(name, pin) {
     created_at: new Date().toISOString(),
   });
   if (error) {
-    if (error.code === '23505') throw new Error('Ese nombre ya está registrado');
-    throw error;
+    if (error.code === '23505') throw new Error('Ese nombre ya está registrado. Toca "Entrar".');
+    throw new Error('Error al registrar: ' + (error.message || 'intenta de nuevo'));
   }
-  localStorage.setItem(AUTH_KEY, JSON.stringify({ name }));
+  // Guardar sesión
+  try { localStorage.setItem(AUTH_KEY, JSON.stringify({ name })); } catch {}
   return { name };
 }
 
-/**
- * Login con nombre + PIN
- */
 export async function loginUser(name, pin) {
   const { data, error } = await supabase
     .from('users')
@@ -31,13 +26,10 @@ export async function loginUser(name, pin) {
     .single();
 
   if (error || !data) throw new Error('Nombre o PIN incorrecto');
-  localStorage.setItem(AUTH_KEY, JSON.stringify({ name: data.name }));
+  try { localStorage.setItem(AUTH_KEY, JSON.stringify({ name: data.name })); } catch {}
   return { name: data.name };
 }
 
-/**
- * Obtener usuario logueado (desde localStorage)
- */
 export function getCurrentUser() {
   try {
     const stored = localStorage.getItem(AUTH_KEY);
@@ -46,9 +38,6 @@ export function getCurrentUser() {
   return null;
 }
 
-/**
- * Cerrar sesión
- */
 export function logout() {
-  localStorage.removeItem(AUTH_KEY);
+  try { localStorage.removeItem(AUTH_KEY); } catch {}
 }
