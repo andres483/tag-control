@@ -82,26 +82,32 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
     const drivers = [...new Set(cTrips.map(t => t.driver))];
     const totalCost = cTrips.reduce((s, t) => s + (t.total_cost || 0), 0);
     const totalTolls = cTrips.reduce((s, t) => s + (t.toll_count || 0), 0);
-    // Métricas de producto
-    const avgCostPerTrip = cTrips.length > 0 ? Math.round(totalCost / cTrips.length) : 0;
-    const avgTollsPerTrip = cTrips.length > 0 ? (totalTolls / cTrips.length).toFixed(1) : 0;
+    // Incluir viajes activos en los totales
+    const liveData = live.data || [];
+    const allCombined = [...cTrips, ...liveData.map(l => ({ driver: l.driver, total_cost: l.total_cost || 0, toll_count: l.toll_count || 0 }))];
 
-    // Viajes por conductor
+    const totalCostAll = allCombined.reduce((s, t) => s + (t.total_cost || 0), 0);
+    const totalTollsAll = allCombined.reduce((s, t) => s + (t.toll_count || 0), 0);
+    const avgCostPerTrip = allCombined.length > 0 ? Math.round(totalCostAll / allCombined.length) : 0;
+    const avgTollsPerTrip = allCombined.length > 0 ? (totalTollsAll / allCombined.length).toFixed(1) : 0;
+
     const tripsByDriver = {};
     const costByDriver = {};
-    for (const t of cTrips) {
+    const allDrivers = new Set();
+    for (const t of allCombined) {
+      allDrivers.add(t.driver);
       tripsByDriver[t.driver] = (tripsByDriver[t.driver] || 0) + 1;
       costByDriver[t.driver] = (costByDriver[t.driver] || 0) + (t.total_cost || 0);
     }
 
     setStats({
-      totalTrips: cTrips.length,
-      activeTrips: (live.data || []).length,
+      totalTrips: allCombined.length,
+      activeTrips: liveData.length,
       registeredUsers: (usersData.data || []).length,
-      drivers: drivers.length,
-      driverList: drivers,
-      totalCost,
-      totalTolls,
+      drivers: allDrivers.size,
+      driverList: [...allDrivers],
+      totalCost: totalCostAll,
+      totalTolls: totalTollsAll,
       avgCostPerTrip,
       avgTollsPerTrip,
       tripsByDriver,
