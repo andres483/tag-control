@@ -8,21 +8,20 @@
   @page { size: A4; margin: 0; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', sans-serif; color: #212529; background: #fff; -webkit-font-smoothing: antialiased; }
-  .page { max-width: 680px; margin: 0 auto; padding: 72px 50px; }
-  .logo { width: 56px; height: 56px; margin-bottom: 36px; }
-  h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; color: #212529; }
-  .divider { width: 32px; height: 2px; background: #2D6A4F; margin: 28px 0; }
-  p { font-size: 15px; line-height: 1.8; color: #495057; margin-bottom: 14px; }
-  .bold { color: #212529; font-weight: 500; }
-  .section { margin-top: 32px; }
-  .section-title { font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: #ADB5BD; margin-bottom: 12px; }
-  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 32px; }
-  .grid-item { font-size: 14px; line-height: 1.7; color: #495057; padding: 4px 0; }
-  .tech { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-  .tech span { font-size: 12px; color: #6C757D; border: 1px solid #DEE2E6; padding: 4px 12px; border-radius: 16px; }
-  .footer { margin-top: 56px; padding-top: 20px; border-top: 1px solid #E9ECEF; }
-  .footer p { font-size: 13px; color: #ADB5BD; margin-bottom: 4px; }
-  @media print { .page { padding: 48px; } }
+  .page { max-width: 680px; margin: 0 auto; padding: 48px 50px 40px; max-height: 100vh; overflow: hidden; }
+  .logo { width: 48px; height: 48px; margin-bottom: 24px; }
+  h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; color: #212529; }
+  .divider { width: 32px; height: 2px; background: #2D6A4F; margin: 20px 0; }
+  p { font-size: 14px; line-height: 1.7; color: #495057; margin-bottom: 10px; }
+  .section { margin-top: 22px; }
+  .section-title { font-size: 10px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: #ADB5BD; margin-bottom: 8px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 32px; }
+  .grid-item { font-size: 13px; line-height: 1.6; color: #495057; padding: 2px 0; }
+  .tech { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+  .tech span { font-size: 11px; color: #6C757D; border: 1px solid #DEE2E6; padding: 3px 10px; border-radius: 16px; }
+  .footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #E9ECEF; }
+  .footer p { font-size: 12px; color: #ADB5BD; margin-bottom: 2px; }
+  @media print { .page { padding: 40px 48px 36px; } }
 </style>
 </head>
 <body>
@@ -52,7 +51,7 @@
 
   <div class="section">
     <p class="section-title">Cobertura</p>
-    <p>35+ puntos de cobro en 8 autopistas de la Región Metropolitana y rutas interurbanas.</p>
+    <p>35+ puntos de cobro en 8 autopistas de la Región Metropolitana y rutas interurbanas. Cobertura en expansión permanente.</p>
     <div class="grid">
       <div class="grid-item">Ruta 68</div>
       <div class="grid-item">Costanera Norte</div>
