@@ -173,10 +173,10 @@ export default function Home() {
     return (
       <div className="flex flex-col gap-5 p-5 pb-24">
         <div className="text-center pt-8 pb-4">
-          <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-primary/10 flex items-center justify-center">
-            <svg className="w-10 h-10 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+          <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-primary flex items-center justify-center shadow-lg">
+            <svg viewBox="0 0 512 512" className="w-12 h-12">
+              <path d="M256 96c-80 0-144 16-144 16v176c0 80 64 136 144 160 80-24 144-80 144-160V112S336 96 256 96z" fill="none" stroke="#fff" strokeWidth="28" strokeLinejoin="round" opacity="0.9"/>
+              <path d="M200 268 L240 308 L312 220" fill="none" stroke="#A7F3D0" strokeWidth="32" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
           <h1 className="text-[22px] font-bold text-text tracking-tight">Registra tus peajes</h1>

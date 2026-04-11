@@ -46,7 +46,10 @@ export default function AuthGate({ children }) {
       <div style={s.wrap}>
         <div style={{ textAlign: 'center', marginBottom: 36 }}>
           <div style={s.logo}>
-            <span style={{ color: '#fff', fontSize: 28, fontWeight: 700 }}>TC</span>
+            <svg viewBox="0 0 512 512" style={{ width: 40, height: 40 }}>
+              <path d="M256 96c-80 0-144 16-144 16v176c0 80 64 136 144 160 80-24 144-80 144-160V112S336 96 256 96z" fill="none" stroke="#fff" strokeWidth="28" strokeLinejoin="round" opacity="0.9"/>
+              <path d="M200 268 L240 308 L312 220" fill="none" stroke="#A7F3D0" strokeWidth="32" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
           </div>
           <h1 style={{ fontSize: 28, fontWeight: 700, color: '#212529', margin: '0 0 4px', letterSpacing: '-0.5px' }}>Tag Control</h1>
           <p style={{ fontSize: 15, color: '#868E96', margin: 0 }}>Controla tus gastos en peajes</p>

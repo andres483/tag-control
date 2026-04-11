@@ -68,8 +68,11 @@ function AppShell({ user, logout }) {
         {/* Header Apple-style */}
         <header className="bg-surface/80 backdrop-blur-xl border-b border-surface-tertiary/50 px-5 py-3 flex items-center justify-between sticky top-0 z-40" style={{ paddingTop: 'max(12px, env(safe-area-inset-top))' }}>
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-sm">
-              <span className="text-white text-sm font-bold">TC</span>
+            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shadow-sm overflow-hidden">
+              <svg viewBox="0 0 512 512" className="w-6 h-6">
+                <path d="M256 96c-80 0-144 16-144 16v176c0 80 64 136 144 160 80-24 144-80 144-160V112S336 96 256 96z" fill="none" stroke="#fff" strokeWidth="32" strokeLinejoin="round" opacity="0.9"/>
+                <path d="M200 268 L240 308 L312 220" fill="none" stroke="#A7F3D0" strokeWidth="36" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
             </div>
             <span className="font-semibold text-text text-[17px] tracking-tight">Tag Control</span>
           </div>
