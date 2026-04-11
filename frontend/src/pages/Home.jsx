@@ -6,29 +6,10 @@ import { formatCLP } from '../lib/format';
 import { playTollSound, initAudio } from '../lib/sound';
 import { upsertLiveTrip, insertLiveCrossing, endLiveTrip } from '../lib/liveTracking';
 import TollChip from '../components/TollChip';
-
-const DRIVER_KEY = 'tagcontrol_driver';
-const DRIVERS_KEY = 'tagcontrol_drivers';
-
-function getSavedDrivers() {
-  try { return JSON.parse(localStorage.getItem(DRIVERS_KEY) || '[]'); } catch { return []; }
-}
-function saveDriver(name) {
-  const drivers = getSavedDrivers();
-  if (!drivers.includes(name)) {
-    drivers.push(name);
-    localStorage.setItem(DRIVERS_KEY, JSON.stringify(drivers));
-  }
-  localStorage.setItem(DRIVER_KEY, name);
-}
-function getLastDriver() {
-  return localStorage.getItem(DRIVER_KEY) || '';
-}
+import { useUser } from '../App';
 
 export default function Home() {
-  const [driver, setDriver] = useState(getLastDriver);
-  const [newDriver, setNewDriver] = useState('');
-  const [drivers] = useState(getSavedDrivers);
+  const { user } = useUser();
   const trip = useTrip();
   const wakeLockRef = useRef(null);
   const tripIdRef = useRef(null);
@@ -63,7 +44,7 @@ export default function Home() {
       if (gps.position && tripIdRef.current) {
         upsertLiveTrip({
           id: tripIdRef.current,
-          driver: trip.driver || 'Sin nombre',
+          driver: user.name,
           lat: gps.position.lat,
           lng: gps.position.lng,
           speed: gps.speed,
@@ -77,7 +58,7 @@ export default function Home() {
     // Enviar inmediatamente también
     upsertLiveTrip({
       id: tripIdRef.current,
-      driver: trip.driver || 'Sin nombre',
+      driver: user.name,
       lat: gps.position.lat,
       lng: gps.position.lng,
       speed: gps.speed,
@@ -124,16 +105,10 @@ export default function Home() {
         tripIdRef.current = null;
       }
     } else {
-      const name = newDriver.trim() || driver;
-      if (name) {
-        saveDriver(name);
-        setDriver(name);
-        setNewDriver('');
-      }
       const id = 'trip-' + Date.now();
       tripIdRef.current = id;
       initAudio();
-      trip.startTrip(name || 'Sin nombre');
+      trip.startTrip(user.name);
       gps.startTracking();
     }
   };
@@ -160,35 +135,6 @@ export default function Home() {
               ? 'Tarifa de fin de semana activa'
               : 'Tarifa de día de semana activa'}
           </p>
-        </div>
-
-        {/* Selector de conductor */}
-        <div className="bg-cream-dark rounded-xl p-4">
-          <p className="text-xs font-medium text-tierra mb-2">¿Quién viaja?</p>
-          {drivers.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-3">
-              {drivers.map((d) => (
-                <button
-                  key={d}
-                  onClick={() => { setDriver(d); setNewDriver(''); }}
-                  className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                    driver === d && !newDriver
-                      ? 'bg-negro text-cream'
-                      : 'bg-cream text-tierra active:bg-negro/10'
-                  }`}
-                >
-                  {d}
-                </button>
-              ))}
-            </div>
-          )}
-          <input
-            type="text"
-            value={newDriver}
-            onChange={(e) => { setNewDriver(e.target.value); setDriver(''); }}
-            placeholder={drivers.length > 0 ? 'O escribe otro nombre...' : 'Escribe tu nombre'}
-            className="w-full bg-cream border border-cream rounded-xl px-3 py-2.5 text-sm text-negro placeholder-hongo focus:outline-none focus:ring-2 focus:ring-primary/30"
-          />
         </div>
 
         <div className="bg-primary rounded-2xl p-6 text-cream text-center">

@@ -58,34 +58,54 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
   const [allTrips, setAllTrips] = useState([]);
   const [completedTrips, setCompletedTrips] = useState([]);
   const [allCrossings, setAllCrossings] = useState([]);
+  const [users, setUsers] = useState([]);
   const [tripCrossings, setTripCrossings] = useState([]);
   const [selectedTripId, setSelectedTripId] = useState(null);
   const [stats, setStats] = useState(null);
 
   async function loadData() {
-    const [live, all, completed, crossings] = await Promise.all([
+    const [live, all, completed, crossings, usersData] = await Promise.all([
       supabase.from('live_trips').select('*').eq('is_active', true).order('updated_at', { ascending: false }),
       supabase.from('live_trips').select('*').order('created_at', { ascending: false }).limit(50),
       supabase.from('trips').select('*').order('created_at', { ascending: false }).limit(50),
       supabase.from('live_crossings').select('*').order('crossed_at', { ascending: false }).limit(100),
+      supabase.from('users').select('*').order('created_at', { ascending: false }),
     ]);
     setLiveTrips(live.data || []);
     setAllTrips(all.data || []);
     setCompletedTrips(completed.data || []);
     setAllCrossings(crossings.data || []);
+    setUsers(usersData.data || []);
 
     // Stats combinados
     const cTrips = completed.data || [];
     const drivers = [...new Set(cTrips.map(t => t.driver))];
     const totalCost = cTrips.reduce((s, t) => s + (t.total_cost || 0), 0);
     const totalTolls = cTrips.reduce((s, t) => s + (t.toll_count || 0), 0);
+    // Métricas de producto
+    const avgCostPerTrip = cTrips.length > 0 ? Math.round(totalCost / cTrips.length) : 0;
+    const avgTollsPerTrip = cTrips.length > 0 ? (totalTolls / cTrips.length).toFixed(1) : 0;
+
+    // Viajes por conductor
+    const tripsByDriver = {};
+    const costByDriver = {};
+    for (const t of cTrips) {
+      tripsByDriver[t.driver] = (tripsByDriver[t.driver] || 0) + 1;
+      costByDriver[t.driver] = (costByDriver[t.driver] || 0) + (t.total_cost || 0);
+    }
+
     setStats({
       totalTrips: cTrips.length,
       activeTrips: (live.data || []).length,
+      registeredUsers: (usersData.data || []).length,
       drivers: drivers.length,
       driverList: drivers,
       totalCost,
       totalTolls,
+      avgCostPerTrip,
+      avgTollsPerTrip,
+      tripsByDriver,
+      costByDriver,
     });
   }
 
@@ -156,6 +176,7 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
   const tabs = [
     { id: 'live', label: 'En vivo' },
     { id: 'trips', label: 'Viajes' },
+    { id: 'users', label: 'Usuarios' },
     { id: 'data', label: 'Datos' },
   ];
 
@@ -182,9 +203,9 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
         {stats && (
           <div className="grid grid-cols-4 gap-2 mb-4">
             {[
+              { label: 'Usuarios', value: stats.registeredUsers },
               { label: 'Viajes', value: stats.totalTrips },
               { label: 'Activos', value: stats.activeTrips },
-              { label: 'Usuarios', value: stats.drivers },
               { label: 'Total', value: formatCLP(stats.totalCost) },
             ].map(s => (
               <div key={s.label} className="bg-cream/5 rounded-xl p-3 text-center">
@@ -292,6 +313,82 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
                   </div>
                 ))}
               </>
+            )}
+          </div>
+        )}
+
+        {/* TAB: Usuarios */}
+        {tab === 'users' && (
+          <div className="flex flex-col gap-4">
+            <div className="bg-cream/5 rounded-xl p-4">
+              <div className="flex justify-between items-center mb-3">
+                <p className="text-sm font-medium">Usuarios registrados ({users.length})</p>
+                {users.length >= 10 && (
+                  <span className="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded-full">Waitlist pronto</span>
+                )}
+              </div>
+              {users.length === 0 ? (
+                <p className="text-tierra text-sm">Sin usuarios registrados aún</p>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {users.map(u => (
+                    <div key={u.name} className="flex justify-between items-center bg-cream/5 rounded-lg px-3 py-2">
+                      <div>
+                        <p className="font-medium text-sm">{u.name}</p>
+                        <p className="text-xs text-tierra">{formatDate(u.created_at)}</p>
+                      </div>
+                      <div className="text-right text-xs">
+                        <p>{stats?.tripsByDriver?.[u.name] || 0} viajes</p>
+                        <p className="text-primary">{formatCLP(stats?.costByDriver?.[u.name] || 0)}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Métricas de producto */}
+            <div className="bg-cream/5 rounded-xl p-4">
+              <p className="text-sm font-medium mb-3">Métricas de producto</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-cream/5 rounded-lg p-3">
+                  <p className="text-lg font-bold">{formatCLP(stats?.avgCostPerTrip || 0)}</p>
+                  <p className="text-xs text-tierra">Promedio por viaje</p>
+                </div>
+                <div className="bg-cream/5 rounded-lg p-3">
+                  <p className="text-lg font-bold">{stats?.avgTollsPerTrip || 0}</p>
+                  <p className="text-xs text-tierra">Peajes por viaje</p>
+                </div>
+                <div className="bg-cream/5 rounded-lg p-3">
+                  <p className="text-lg font-bold">{stats?.registeredUsers || 0}</p>
+                  <p className="text-xs text-tierra">Usuarios totales</p>
+                </div>
+                <div className="bg-cream/5 rounded-lg p-3">
+                  <p className="text-lg font-bold">{stats?.totalTolls || 0}</p>
+                  <p className="text-xs text-tierra">Peajes detectados</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Top conductores */}
+            {stats?.driverList?.length > 0 && (
+              <div className="bg-cream/5 rounded-xl p-4">
+                <p className="text-sm font-medium mb-3">Ranking por gasto</p>
+                {[...stats.driverList]
+                  .sort((a, b) => (stats.costByDriver[b] || 0) - (stats.costByDriver[a] || 0))
+                  .map((d, i) => (
+                    <div key={d} className="flex justify-between items-center py-2 border-b border-cream/5 last:border-0">
+                      <span className="text-sm">
+                        <span className="text-tierra mr-2">#{i + 1}</span>
+                        {d}
+                      </span>
+                      <span className="text-sm">
+                        <span className="text-primary font-medium">{formatCLP(stats.costByDriver[d] || 0)}</span>
+                        <span className="text-tierra ml-2">({stats.tripsByDriver[d] || 0} viajes)</span>
+                      </span>
+                    </div>
+                  ))}
+              </div>
             )}
           </div>
         )}

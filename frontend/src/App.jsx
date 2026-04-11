@@ -1,10 +1,15 @@
-import { Component } from 'react';
+import { Component, createContext, useContext } from 'react';
 import { BrowserRouter, Routes, Route, NavLink, useLocation } from 'react-router-dom';
 import Home from './pages/Home';
 import PlanRoute from './pages/PlanRoute';
 import History from './pages/History';
 import Settings from './pages/Settings';
 import Admin from './pages/Admin';
+import AuthGate from './components/AuthGate';
+
+// Contexto global del usuario
+export const UserContext = createContext(null);
+export function useUser() { return useContext(UserContext); }
 
 class ErrorBoundary extends Component {
   constructor(props) { super(props); this.state = { error: null }; }
@@ -65,62 +70,67 @@ const navItems = [
   },
 ];
 
-function AppShell() {
-  const location = useLocation();
-
-  // Admin: ruta separada, sin shell de app
-  if (location.pathname === '/admin') {
-    return <Admin />;
-  }
-
+function AppShell({ user, logout }) {
   return (
-    <div className="max-w-[390px] mx-auto min-h-screen bg-cream flex flex-col relative shadow-2xl">
-      <header className="bg-negro text-cream px-4 py-3 flex items-center gap-2">
-        <svg className="w-7 h-7" viewBox="0 0 100 100">
-          <rect width="100" height="100" rx="20" fill="#5C6B5A" />
-          <text x="50" y="68" fontSize="50" fontFamily="system-ui" fontWeight="700" fill="#F7F5F1" textAnchor="middle">TC</text>
-        </svg>
-        <span className="font-bold text-lg">Tag Control</span>
-      </header>
+    <UserContext.Provider value={{ user, logout }}>
+      <div className="max-w-[390px] mx-auto min-h-screen bg-cream flex flex-col relative shadow-2xl">
+        <header className="bg-negro text-cream px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <svg className="w-7 h-7" viewBox="0 0 100 100">
+              <rect width="100" height="100" rx="20" fill="#5C6B5A" />
+              <text x="50" y="68" fontSize="50" fontFamily="system-ui" fontWeight="700" fill="#F7F5F1" textAnchor="middle">TC</text>
+            </svg>
+            <span className="font-bold text-lg">Tag Control</span>
+          </div>
+          <button onClick={logout} className="text-xs text-tierra active:text-cream">
+            {user.name} &middot; Salir
+          </button>
+        </header>
 
-      <main className="flex-1 overflow-y-auto pb-20">
-        <ErrorBoundary>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/planificar" element={<PlanRoute />} />
-            <Route path="/historial" element={<History />} />
-            <Route path="/live" element={<Settings />} />
-          </Routes>
-        </ErrorBoundary>
-      </main>
+        <main className="flex-1 overflow-y-auto pb-20">
+          <ErrorBoundary>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/planificar" element={<PlanRoute />} />
+              <Route path="/historial" element={<History />} />
+              <Route path="/live" element={<Settings />} />
+            </Routes>
+          </ErrorBoundary>
+        </main>
 
-      <nav className="absolute bottom-0 left-0 right-0 bg-cream border-t border-cream-dark">
-        <div className="flex justify-around items-center h-16">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === '/'}
-              className={({ isActive }) =>
-                `flex flex-col items-center gap-0.5 text-xs transition-colors ${
-                  isActive ? 'text-primary' : 'text-tierra'
-                }`
-              }
-            >
-              {item.icon}
-              <span>{item.label}</span>
-            </NavLink>
-          ))}
-        </div>
-      </nav>
-    </div>
+        <nav className="absolute bottom-0 left-0 right-0 bg-cream border-t border-cream-dark">
+          <div className="flex justify-around items-center h-16">
+            {navItems.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.to === '/'}
+                className={({ isActive }) =>
+                  `flex flex-col items-center gap-0.5 text-xs transition-colors ${
+                    isActive ? 'text-primary' : 'text-tierra'
+                  }`
+                }
+              >
+                {item.icon}
+                <span>{item.label}</span>
+              </NavLink>
+            ))}
+          </div>
+        </nav>
+      </div>
+    </UserContext.Provider>
   );
 }
 
 function RouterRoot() {
   const location = useLocation();
   if (location.pathname === '/admin') return <Admin />;
-  return <AppShell />;
+
+  return (
+    <AuthGate>
+      {({ user, logout }) => <AppShell user={user} logout={logout} />}
+    </AuthGate>
+  );
 }
 
 export default function App() {
