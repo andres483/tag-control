@@ -58,6 +58,8 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
   const [allTrips, setAllTrips] = useState([]);
   const [completedTrips, setCompletedTrips] = useState([]);
   const [allCrossings, setAllCrossings] = useState([]);
+  const [liveCrossingsByTrip, setLiveCrossingsByTrip] = useState({});
+  const [expandedLiveTrip, setExpandedLiveTrip] = useState(null);
   const [users, setUsers] = useState([]);
   const [tripCrossings, setTripCrossings] = useState([]);
   const [selectedTripId, setSelectedTripId] = useState(null);
@@ -76,6 +78,18 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
     setCompletedTrips(completed.data || []);
     setAllCrossings(crossings.data || []);
     setUsers(usersData.data || []);
+
+    // Crossings por viaje activo
+    const cxByTrip = {};
+    for (const c of (crossings.data || [])) {
+      if (!cxByTrip[c.trip_id]) cxByTrip[c.trip_id] = [];
+      cxByTrip[c.trip_id].push(c);
+    }
+    // Ordenar cada grupo por fecha ascendente
+    for (const id in cxByTrip) {
+      cxByTrip[id].sort((a, b) => new Date(a.crossed_at) - new Date(b.crossed_at));
+    }
+    setLiveCrossingsByTrip(cxByTrip);
 
     // Stats combinados
     const cTrips = completed.data || [];
@@ -343,32 +357,60 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
               {liveTrips.map(t => {
                 const ago = Math.round((Date.now() - new Date(t.updated_at).getTime()) / 1000);
                 const isRecent = ago < 30;
+                const isExpanded = expandedLiveTrip === t.id;
+                const tripCx = liveCrossingsByTrip[t.id] || [];
                 return (
-                  <div key={t.id} className="bg-cream/10 backdrop-blur-md rounded-2xl p-4 border border-cream/10">
-                    <div className="flex justify-between items-start">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-                          <span className="text-cream font-bold">{t.driver?.charAt(0)?.toUpperCase()}</span>
+                  <div
+                    key={t.id}
+                    className="bg-cream/10 backdrop-blur-md rounded-2xl border border-cream/10 overflow-hidden"
+                  >
+                    <button
+                      onClick={() => setExpandedLiveTrip(isExpanded ? null : t.id)}
+                      className="w-full p-4 text-left"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
+                            <span className="text-cream font-bold">{t.driver?.charAt(0)?.toUpperCase()}</span>
+                          </div>
+                          <div>
+                            <p className="font-bold text-cream">{t.driver}</p>
+                            <p className="text-xs text-tierra flex items-center gap-1">
+                              <span className={`inline-block w-1.5 h-1.5 rounded-full ${isRecent ? 'bg-green-400' : 'bg-yellow-400'}`} />
+                              {isRecent ? 'En vivo' : `Hace ${ago}s`}
+                              &middot; {Math.round(t.speed || 0)} km/h
+                              {locations[t.id] && <> &middot; {locations[t.id]}</>}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-bold text-cream">{t.driver}</p>
-                          <p className="text-xs text-tierra flex items-center gap-1">
-                            <span className={`inline-block w-1.5 h-1.5 rounded-full ${isRecent ? 'bg-green-400' : 'bg-yellow-400'}`} />
-                            {isRecent ? 'En vivo' : `Hace ${ago}s`}
-                            &middot; {Math.round(t.speed || 0)} km/h
-                            {locations[t.id] && <> &middot; {locations[t.id]}</>}
-                          </p>
+                        <div className="text-right">
+                          <p className="text-2xl font-bold text-primary">{formatCLP(t.total_cost || 0)}</p>
+                          <p className="text-xs text-tierra">{t.toll_count || 0} peajes ▾</p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-2xl font-bold text-primary">{formatCLP(t.total_cost || 0)}</p>
-                        <p className="text-xs text-tierra">{t.toll_count || 0} peajes</p>
-                      </div>
-                    </div>
-                    {t.last_toll && (
-                      <div className="mt-3 pt-3 border-t border-cream/10 flex justify-between items-center">
-                        <span className="text-xs text-tierra">Último peaje</span>
-                        <span className="text-xs text-cream font-medium">{t.last_toll}</span>
+                    </button>
+
+                    {/* Acordeón: peajes del viaje */}
+                    {isExpanded && (
+                      <div className="px-4 pb-4">
+                        <div className="border-t border-cream/10 pt-3 flex flex-col gap-2">
+                          {tripCx.length === 0 ? (
+                            <p className="text-xs text-tierra text-center">Sin peajes aún</p>
+                          ) : (
+                            tripCx.map((c, i) => (
+                              <div key={c.id} className="flex items-center justify-between text-xs">
+                                <div className="flex items-center gap-2">
+                                  <span className="w-5 h-5 bg-primary/20 rounded-full flex items-center justify-center text-[10px] text-primary font-bold">{i + 1}</span>
+                                  <div>
+                                    <span className="text-cream">{c.toll_nombre}</span>
+                                    <span className="text-tierra ml-1">{formatTime(c.crossed_at)}</span>
+                                  </div>
+                                </div>
+                                <span className="text-primary font-medium">{formatCLP(c.tarifa)}</span>
+                              </div>
+                            ))
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>
