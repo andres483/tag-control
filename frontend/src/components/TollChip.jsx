@@ -1,15 +1,5 @@
 import { getTarifa } from '../lib/pricing';
-
-function formatCLP(amount) {
-  return amount.toLocaleString('es-CL', { style: 'currency', currency: 'CLP' });
-}
-
-function formatTime(timestamp) {
-  return new Date(timestamp).toLocaleTimeString('es-CL', {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
+import { formatCLP, formatTime } from '../lib/format';
 
 export default function TollChip({ crossing }) {
   const { toll, timestamp } = crossing;

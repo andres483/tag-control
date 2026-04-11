@@ -2,12 +2,9 @@ import { useEffect, useCallback, useRef } from 'react';
 import { useGPS } from '../hooks/useGPS';
 import { useTrip } from '../hooks/useTrip';
 import { getTarifaLabel } from '../lib/pricing';
+import { formatCLP } from '../lib/format';
 import { playTollSound, initAudio } from '../lib/sound';
 import TollChip from '../components/TollChip';
-
-function formatCLP(amount) {
-  return amount.toLocaleString('es-CL', { style: 'currency', currency: 'CLP' });
-}
 
 export default function Home() {
   const trip = useTrip();
@@ -18,31 +15,40 @@ export default function Home() {
       if (!trip.isActive) return;
       trip.addCrossing(crossing);
       playTollSound();
-      if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
     },
     [trip.isActive, trip.addCrossing]
   );
 
   const gps = useGPS({ onTollCrossed: handleTollCrossed });
 
-  // Wake Lock
+  // Wake Lock + re-acquire on visibility change
   useEffect(() => {
-    async function toggleWakeLock() {
-      if (trip.isActive) {
-        try {
-          if ('wakeLock' in navigator) {
-            wakeLockRef.current = await navigator.wakeLock.request('screen');
-          }
-        } catch {}
-      } else {
-        if (wakeLockRef.current) {
-          wakeLockRef.current.release().catch(() => {});
-          wakeLockRef.current = null;
+    async function acquireWakeLock() {
+      try {
+        if ('wakeLock' in navigator) {
+          wakeLockRef.current = await navigator.wakeLock.request('screen');
         }
+      } catch {}
+    }
+
+    function handleVisibilityChange() {
+      if (trip.isActive && document.visibilityState === 'visible') {
+        acquireWakeLock();
       }
     }
-    toggleWakeLock();
+
+    if (trip.isActive) {
+      acquireWakeLock();
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+    } else {
+      if (wakeLockRef.current) {
+        wakeLockRef.current.release().catch(() => {});
+        wakeLockRef.current = null;
+      }
+    }
+
     return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       if (wakeLockRef.current) wakeLockRef.current.release().catch(() => {});
     };
   }, [trip.isActive]);
@@ -52,7 +58,7 @@ export default function Home() {
       gps.stopTracking();
       trip.endTrip();
     } else {
-      initAudio(); // Desbloquear audio en Safari iOS (requiere gesto del usuario)
+      initAudio();
       trip.startTrip();
       gps.startTracking();
     }
@@ -64,7 +70,6 @@ export default function Home() {
   if (!trip.isActive && trip.crossings.length === 0) {
     return (
       <div className="flex flex-col gap-5 p-5 pb-24">
-        {/* Saludo */}
         <div className="text-center pt-6 pb-2">
           <p className="text-2xl font-bold text-negro">Tu peaje, bajo control</p>
           <p className="text-sm text-tierra mt-1">
@@ -74,19 +79,15 @@ export default function Home() {
           </p>
         </div>
 
-        {/* Card principal */}
         <div className="bg-primary rounded-2xl p-6 text-cream text-center">
           <svg className="w-16 h-16 mx-auto mb-3 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
           </svg>
           <p className="text-lg font-medium">Registra tus peajes</p>
-          <p className="text-sm opacity-70 mt-1">
-            Detecta automáticamente cada peaje que cruzas
-          </p>
+          <p className="text-sm opacity-70 mt-1">Detecta automáticamente cada peaje que cruzas</p>
         </div>
 
-        {/* Botón grande */}
         <button
           onClick={handleToggleTrip}
           className="w-full py-5 rounded-2xl font-bold text-xl text-cream bg-negro active:bg-negro/80 transition-colors"
@@ -94,38 +95,25 @@ export default function Home() {
           Comenzar viaje
         </button>
 
-        {/* Instrucciones simples */}
         <div className="bg-cream-dark rounded-xl p-4">
           <p className="text-sm font-semibold text-negro mb-3">¿Cómo funciona?</p>
           <div className="flex flex-col gap-3">
-            <div className="flex items-start gap-3">
-              <span className="w-7 h-7 bg-primary-light rounded-full flex items-center justify-center shrink-0">
-                <span className="text-xs font-bold text-primary">1</span>
-              </span>
-              <p className="text-sm text-negro/70">Presiona <strong className="text-negro">"Comenzar viaje"</strong> antes de salir</p>
-            </div>
-            <div className="flex items-start gap-3">
-              <span className="w-7 h-7 bg-primary-light rounded-full flex items-center justify-center shrink-0">
-                <span className="text-xs font-bold text-primary">2</span>
-              </span>
-              <p className="text-sm text-negro/70">Acepta el permiso de ubicación si te lo pide</p>
-            </div>
-            <div className="flex items-start gap-3">
-              <span className="w-7 h-7 bg-primary-light rounded-full flex items-center justify-center shrink-0">
-                <span className="text-xs font-bold text-primary">3</span>
-              </span>
-              <p className="text-sm text-negro/70">El celular <strong className="text-negro">vibra</strong> cada vez que cruzas un peaje</p>
-            </div>
-            <div className="flex items-start gap-3">
-              <span className="w-7 h-7 bg-primary-light rounded-full flex items-center justify-center shrink-0">
-                <span className="text-xs font-bold text-primary">4</span>
-              </span>
-              <p className="text-sm text-negro/70">Al llegar, presiona <strong className="text-negro">"Detener viaje"</strong></p>
-            </div>
+            {[
+              ['1', 'Presiona "Comenzar viaje" antes de salir'],
+              ['2', 'Acepta el permiso de ubicación si te lo pide'],
+              ['3', 'Suena una alerta cada vez que cruzas un peaje'],
+              ['4', 'Al llegar, presiona "Detener viaje"'],
+            ].map(([n, text]) => (
+              <div key={n} className="flex items-start gap-3">
+                <span className="w-7 h-7 bg-primary-light rounded-full flex items-center justify-center shrink-0">
+                  <span className="text-xs font-bold text-primary">{n}</span>
+                </span>
+                <p className="text-sm text-negro/70">{text}</p>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Tip */}
         <div className="bg-primary-light rounded-xl p-3 text-xs text-primary text-center">
           Deja Safari abierto con la pantalla encendida durante el viaje
         </div>
@@ -136,7 +124,6 @@ export default function Home() {
   // ─── PANTALLA DURANTE / DESPUÉS DEL VIAJE ───
   return (
     <div className="flex flex-col gap-4 p-4 pb-24">
-      {/* Hero con total */}
       <div className="bg-negro rounded-2xl p-6 text-cream">
         <div className="flex items-center justify-between mb-1">
           <span className="text-sm text-tierra">
@@ -149,9 +136,7 @@ export default function Home() {
             </span>
           )}
         </div>
-        <p className="text-5xl font-bold tracking-tight mt-2">
-          {formatCLP(trip.totalCost)}
-        </p>
+        <p className="text-5xl font-bold tracking-tight mt-2">{formatCLP(trip.totalCost)}</p>
         <p className="text-sm text-tierra mt-2">
           {trip.tollCount === 0
             ? 'Esperando peajes...'
@@ -160,7 +145,6 @@ export default function Home() {
         <p className="text-xs text-hongo mt-1">Tarifa {tarifaLabel.toLowerCase()}</p>
       </div>
 
-      {/* Botón detener / nuevo viaje */}
       <button
         onClick={handleToggleTrip}
         className={`w-full py-4 rounded-2xl font-bold text-lg transition-colors ${
@@ -172,53 +156,41 @@ export default function Home() {
         {trip.isActive ? 'Detener viaje' : 'Nuevo viaje'}
       </button>
 
-      {/* Aviso pantalla */}
       {trip.isActive && (
         <div className="bg-primary-light rounded-xl p-4 text-primary">
           <p className="text-sm font-semibold">Mantén esta pantalla abierta</p>
-          <p className="text-xs mt-1 opacity-80">No cambies de app ni bloquees el celular. Si lo haces, el GPS se detiene y no detectará peajes.</p>
+          <p className="text-xs mt-1 opacity-80">No cambies de app ni bloquees el celular.</p>
         </div>
       )}
 
-      {/* Error GPS */}
       {gps.error && (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700">
-          {gps.error}
-        </div>
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700">{gps.error}</div>
       )}
 
-      {/* Coordenadas + velocidad */}
       {gps.isTracking && gps.position && (
         <div className="bg-cream-dark rounded-xl p-3 text-xs text-tierra flex justify-between">
-          <span>
-            {gps.position.lat.toFixed(4)}, {gps.position.lng.toFixed(4)}
-          </span>
+          <span>{gps.position.lat.toFixed(4)}, {gps.position.lng.toFixed(4)}</span>
           <span>{Math.round(gps.speed)} km/h</span>
         </div>
       )}
 
-      {/* Spinner esperando peajes */}
       {trip.isActive && trip.crossings.length === 0 && (
         <div className="text-center py-6">
           <div className="w-12 h-12 mx-auto mb-2 border-4 border-cream-dark border-t-primary rounded-full animate-spin" />
           <p className="text-sm mt-3 text-negro">Buscando peajes cercanos...</p>
-          <p className="text-xs mt-1 text-tierra">El celular vibrará cuando cruces uno</p>
+          <p className="text-xs mt-1 text-tierra">Suena una alerta cuando cruces uno</p>
         </div>
       )}
 
-      {/* Lista de peajes cruzados */}
       {trip.crossings.length > 0 && (
         <div className="flex flex-col gap-2">
-          <h2 className="text-sm font-semibold text-negro px-1">
-            Peajes cruzados
-          </h2>
+          <h2 className="text-sm font-semibold text-negro px-1">Peajes cruzados</h2>
           {[...trip.crossings].reverse().map((crossing) => (
             <TollChip key={`${crossing.toll.id}-${crossing.timestamp}`} crossing={crossing} />
           ))}
         </div>
       )}
 
-      {/* Resumen ida y vuelta si terminó */}
       {!trip.isActive && trip.crossings.length > 0 && (
         <div className="bg-cream-dark rounded-xl p-4">
           <div className="flex justify-between items-center">

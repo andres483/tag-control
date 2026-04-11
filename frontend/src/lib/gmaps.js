@@ -1,3 +1,5 @@
+import { haversine } from './geoUtils';
+
 const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY;
 
 /**
@@ -59,25 +61,13 @@ export async function getRoute(origin, destination) {
  * Calcula la distancia mínima entre un punto y una polilínea (ruta).
  * Retorna la distancia en metros.
  */
-export function distanceToRoute(point, routePath) {
+function distanceToRoute(point, routePath) {
   let minDist = Infinity;
   for (const p of routePath) {
-    const d = haversineSimple(point.lat, point.lng, p.lat, p.lng);
+    const d = haversine(point.lat, point.lng, p.lat, p.lng);
     if (d < minDist) minDist = d;
   }
   return minDist;
-}
-
-function haversineSimple(lat1, lon1, lat2, lon2) {
-  const R = 6371000;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 /**
@@ -107,7 +97,7 @@ function findClosestIndex(path, point) {
   let minDist = Infinity;
   let minIdx = 0;
   for (let i = 0; i < path.length; i++) {
-    const d = haversineSimple(point.lat, point.lng, path[i].lat, path[i].lng);
+    const d = haversine(point.lat, point.lng, path[i].lat, path[i].lng);
     if (d < minDist) {
       minDist = d;
       minIdx = i;

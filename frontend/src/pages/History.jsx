@@ -1,24 +1,6 @@
 import { useState, useMemo } from 'react';
 import { getSavedTrips, clearTrips } from '../lib/storage';
-
-function formatCLP(amount) {
-  return amount.toLocaleString('es-CL', { style: 'currency', currency: 'CLP' });
-}
-
-function formatDate(ts) {
-  return new Date(ts).toLocaleDateString('es-CL', {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-  });
-}
-
-function formatTime(ts) {
-  return new Date(ts).toLocaleTimeString('es-CL', {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
+import { formatCLP, formatDate, formatTime } from '../lib/format';
 
 export default function History() {
   const [trips, setTrips] = useState(getSavedTrips);
@@ -37,10 +19,9 @@ export default function History() {
     const viajesMes = thisMonth.length;
     const promedioPorViaje = trips.length > 0 ? Math.round(totalGastado / trips.length) : 0;
 
-    // Ruta más usada
     const rutaCount = {};
     for (const trip of trips) {
-      for (const r of trip.routes) {
+      for (const r of (trip.routes || [])) {
         rutaCount[r] = (rutaCount[r] || 0) + 1;
       }
     }
@@ -63,7 +44,6 @@ export default function History() {
     setShowConfirmClear(false);
   };
 
-  // ─── SIN VIAJES ───
   if (trips.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full p-8">
@@ -78,12 +58,10 @@ export default function History() {
     );
   }
 
-  // ─── CON VIAJES ───
   return (
     <div className="flex flex-col gap-4 p-4 pb-24">
       <h1 className="text-lg font-bold text-negro">Historial</h1>
 
-      {/* Resumen general */}
       <div className="bg-negro rounded-2xl p-5 text-cream">
         <p className="text-sm text-tierra mb-1">Total acumulado</p>
         <p className="text-4xl font-bold tracking-tight">{formatCLP(stats.totalGastado)}</p>
@@ -103,7 +81,6 @@ export default function History() {
         </div>
       </div>
 
-      {/* Resumen del mes */}
       <div className="bg-primary rounded-xl p-4 text-cream">
         <div className="flex justify-between items-center">
           <div>
@@ -117,7 +94,6 @@ export default function History() {
         </div>
       </div>
 
-      {/* Ruta más usada */}
       {stats.rutaTop && (
         <div className="bg-cream-dark rounded-xl p-4 flex justify-between items-center">
           <div>
@@ -130,7 +106,6 @@ export default function History() {
         </div>
       )}
 
-      {/* Lista de viajes */}
       <div className="flex flex-col gap-2">
         <h2 className="text-sm font-semibold text-negro px-1">Viajes recientes</h2>
         {trips.map((trip) => (
@@ -138,7 +113,7 @@ export default function History() {
             <div className="flex justify-between items-start">
               <div>
                 <p className="font-medium text-negro text-sm">
-                  {trip.routes.join(' → ')}
+                  {(trip.routes || []).join(' → ') || 'Viaje'}
                 </p>
                 <p className="text-xs text-tierra mt-0.5">
                   {formatDate(trip.startTime)} &middot; {formatTime(trip.startTime)} – {formatTime(trip.endTime)}
@@ -146,9 +121,8 @@ export default function History() {
               </div>
               <span className="font-bold text-primary">{formatCLP(trip.totalCost)}</span>
             </div>
-            {/* Desglose peajes */}
             <div className="mt-3 flex flex-wrap gap-1.5">
-              {trip.crossings.map((c, i) => (
+              {(trip.crossings || []).map((c, i) => (
                 <span
                   key={i}
                   className="inline-flex items-center gap-1 text-xs bg-cream px-2 py-1 rounded-full text-tierra"
@@ -162,7 +136,6 @@ export default function History() {
         ))}
       </div>
 
-      {/* Borrar historial */}
       <div className="pt-2">
         {!showConfirmClear ? (
           <button

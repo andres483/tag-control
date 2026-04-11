@@ -1,11 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useTolls } from '../hooks/useTolls';
 import { getTarifa, getTarifaLabel } from '../lib/pricing';
+import { formatCLP } from '../lib/format';
 import { loadGoogleMaps, getRoute, findTollsOnRoute } from '../lib/gmaps';
-
-function formatCLP(amount) {
-  return amount.toLocaleString('es-CL', { style: 'currency', currency: 'CLP' });
-}
 
 export default function PlanRoute() {
   const { tolls } = useTolls();
@@ -128,9 +125,9 @@ export default function PlanRoute() {
       {/* Botón buscar */}
       <button
         onClick={handleSearch}
-        disabled={loading || !origin || !destination}
+        disabled={loading}
         className={`w-full py-3.5 rounded-xl font-semibold text-cream transition-colors ${
-          loading || !origin || !destination
+          loading
             ? 'bg-tierra/40'
             : 'bg-negro active:bg-negro/80'
         }`}

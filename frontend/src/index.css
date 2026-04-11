@@ -18,8 +18,3 @@ body {
   -moz-osx-font-smoothing: grayscale;
   background: #1A1A1A;
 }
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
