@@ -129,22 +129,20 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
   }, [selectedTripId, allCrossings.length]);
 
   const [mapsReady, setMapsReady] = useState(!!window.google?.maps);
+  const [locations, setLocations] = useState({}); // { tripId: 'Cerca de Lo Prado' }
 
-  // Load Google Maps script and wait for it
+  // Load Google Maps script
   useEffect(() => {
-    if (window.google?.maps) {
-      setMapsReady(true);
-      return;
-    }
+    if (window.google?.maps) { setMapsReady(true); return; }
     const key = import.meta.env.VITE_GOOGLE_MAPS_KEY;
     if (!key) return;
-
     const existing = document.querySelector('script[src*="maps.googleapis.com"]');
     if (existing) {
-      existing.addEventListener('load', () => setMapsReady(true));
-      return;
+      const check = setInterval(() => {
+        if (window.google?.maps) { setMapsReady(true); clearInterval(check); }
+      }, 200);
+      return () => clearInterval(check);
     }
-
     const script = document.createElement('script');
     script.src = `https://maps.googleapis.com/maps/api/js?key=${key}`;
     script.async = true;
@@ -152,23 +150,54 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
     document.head.appendChild(script);
   }, []);
 
-  // Init map when ready
+  // Init map — retry until mapRef and google are ready
   useEffect(() => {
-    if (!mapsReady || !mapRef.current) return;
-    if (mapInstanceRef.current) return;
-
-    mapInstanceRef.current = new google.maps.Map(mapRef.current, {
-      center: { lat: -33.42, lng: -70.65 },
-      zoom: 11,
-      disableDefaultUI: true,
-      zoomControl: true,
-      mapTypeControl: false,
-      styles: [
-        { featureType: 'poi', stylers: [{ visibility: 'off' }] },
-        { featureType: 'transit', stylers: [{ visibility: 'off' }] },
-      ],
-    });
+    if (!mapsReady || mapInstanceRef.current) return;
+    const tryInit = () => {
+      if (!mapRef.current) return;
+      mapInstanceRef.current = new google.maps.Map(mapRef.current, {
+        center: { lat: -33.42, lng: -70.65 },
+        zoom: 11,
+        disableDefaultUI: true,
+        zoomControl: true,
+        styles: [
+          { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+          { featureType: 'transit', stylers: [{ visibility: 'off' }] },
+        ],
+      });
+    };
+    tryInit();
+    // Retry si el ref no estaba listo
+    if (!mapInstanceRef.current) {
+      const retry = setTimeout(tryInit, 500);
+      return () => clearTimeout(retry);
+    }
   }, [mapsReady, tab]);
+
+  // Reverse geocode para ubicación aproximada
+  useEffect(() => {
+    if (!mapsReady || !window.google?.maps?.Geocoder) return;
+    const geocoder = new google.maps.Geocoder();
+    for (const trip of liveTrips) {
+      if (!trip.lat || !trip.lng || locations[trip.id]) continue;
+      geocoder.geocode({ location: { lat: trip.lat, lng: trip.lng } }, (results, status) => {
+        if (status === 'OK' && results[0]) {
+          const parts = results[0].address_components;
+          const locality = parts.find(p => p.types.includes('locality'))?.long_name;
+          const route = parts.find(p => p.types.includes('route'))?.long_name;
+          const sublocality = parts.find(p => p.types.includes('sublocality'))?.long_name;
+          const label = route || sublocality || locality || results[0].formatted_address.split(',')[0];
+          setLocations(prev => ({ ...prev, [trip.id]: label }));
+        }
+      });
+    }
+  }, [liveTrips, mapsReady]);
+
+  // Actualizar reverse geocode cada 30s
+  useEffect(() => {
+    const interval = setInterval(() => setLocations({}), 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Update map markers
   useEffect(() => {
@@ -321,6 +350,7 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
                             <span className={`inline-block w-1.5 h-1.5 rounded-full ${isRecent ? 'bg-green-400' : 'bg-yellow-400'}`} />
                             {isRecent ? 'En vivo' : `Hace ${ago}s`}
                             &middot; {Math.round(t.speed || 0)} km/h
+                            {locations[t.id] && <> &middot; {locations[t.id]}</>}
                           </p>
                         </div>
                       </div>
