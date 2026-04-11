@@ -1,7 +1,7 @@
 {
   "tolls": [
-    { "id": "ruta68-zapata", "nombre": "Peaje Troncal Zapata", "ruta": "Ruta 68", "tarifa_semana": 1800, "tarifa_finde": 2700, "lat": -33.371068, "lng": -71.299739, "radio_deteccion_m": 250 },
-    { "id": "ruta68-lo-prado", "nombre": "Peaje Troncal Lo Prado", "ruta": "Ruta 68", "tarifa_semana": 2100, "tarifa_finde": 3200, "lat": -33.456658, "lng": -70.898203, "radio_deteccion_m": 250 },
+    { "id": "ruta68-zapata", "nombre": "Peaje Troncal Zapata", "ruta": "Ruta 68", "tarifa_semana": 2700, "tarifa_finde": 4000, "lat": -33.371068, "lng": -71.299739, "radio_deteccion_m": 250 },
+    { "id": "ruta68-lo-prado", "nombre": "Peaje Troncal Lo Prado", "ruta": "Ruta 68", "tarifa_semana": 2700, "tarifa_finde": 4000, "lat": -33.456658, "lng": -70.898203, "radio_deteccion_m": 250 },
 
     { "id": "cn-p9", "nombre": "Pórtico Vespucio-Ruta68", "ruta": "Costanera Norte", "tarifa_semana": 535, "tarifa_finde": 535, "lat": -33.41866, "lng": -70.79190, "radio_deteccion_m": 300 },
     { "id": "cn-p6.2", "nombre": "Pórtico Petersen", "ruta": "Costanera Norte", "tarifa_semana": 365, "tarifa_finde": 365, "lat": -33.41209, "lng": -70.75662, "radio_deteccion_m": 300 },
