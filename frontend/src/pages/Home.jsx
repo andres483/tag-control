@@ -98,7 +98,7 @@ export default function Home() {
           lastToll: trip.crossings.length > 0 ? trip.crossings[trip.crossings.length - 1].toll.nombre : null,
         }).catch(() => {});
       }
-    }, 10000);
+    }, 30000); // Cada 30s (ahorra batería y datos)
     // Enviar inmediatamente también
     upsertLiveTrip({
       id: tripIdRef.current,

@@ -4,76 +4,47 @@ import tollsData from '../data/tolls.json';
 
 const DETECTION_RADIUS_M = 150;
 const MIN_SPEED_KMH = 20;
-const COOLDOWN_MS = 120000; // 2 minutos
+const COOLDOWN_MS = 120000;
+const THROTTLE_MS = 5000; // Procesar GPS máximo cada 5 segundos (ahorra batería)
 
 export function useGPS({ onTollCrossed } = {}) {
   const [position, setPosition] = useState(null);
   const [speed, setSpeed] = useState(0);
   const [error, setError] = useState(null);
   const [isTracking, setIsTracking] = useState(false);
-  const [permissionState, setPermissionState] = useState('prompt');
 
   const watchIdRef = useRef(null);
   const cooldownsRef = useRef({});
   const onTollCrossedRef = useRef(onTollCrossed);
-  const lastPositionRef = useRef(null); // Para calcular velocidad manualmente
+  const lastPositionRef = useRef(null);
+  const lastProcessedRef = useRef(0); // Throttle timestamp
 
   useEffect(() => {
     onTollCrossedRef.current = onTollCrossed;
   }, [onTollCrossed]);
 
-  useEffect(() => {
-    try {
-      if (navigator?.permissions?.query) {
-        navigator.permissions.query({ name: 'geolocation' }).then((result) => {
-          setPermissionState(result.state);
-          result.addEventListener('change', () => setPermissionState(result.state));
-        }).catch(() => {});
-      }
-    } catch {}
-  }, []);
-
-  /**
-   * Calcula velocidad manualmente cuando el GPS no la reporta (Safari iOS).
-   * Usa la distancia entre la posición actual y la anterior dividida por el tiempo.
-   */
   const calculateSpeed = useCallback((lat, lng, timestamp) => {
     const last = lastPositionRef.current;
     if (!last) return 0;
-
     const distMeters = haversine(last.lat, last.lng, lat, lng);
     const timeSec = (timestamp - last.timestamp) / 1000;
-
     if (timeSec <= 0) return 0;
-
-    // m/s a km/h
     const speedKmh = (distMeters / timeSec) * 3.6;
-
-    // Filtrar valores absurdos (GPS saltó)
     if (speedKmh > 200) return last.speed || 0;
-
     return speedKmh;
   }, []);
 
   const checkTollProximity = useCallback((lat, lng, currentSpeed) => {
     const now = Date.now();
-
     for (const toll of tollsData.tolls) {
       const distance = haversine(lat, lng, toll.lat, toll.lng);
       const lastCrossed = cooldownsRef.current[toll.id] || 0;
       const isInCooldown = now - lastCrossed < COOLDOWN_MS;
       const radius = toll.radio_deteccion_m || DETECTION_RADIUS_M;
-
       if (distance <= radius && currentSpeed >= MIN_SPEED_KMH && !isInCooldown) {
         cooldownsRef.current[toll.id] = now;
-
         onTollCrossedRef.current?.({
-          toll,
-          timestamp: now,
-          lat,
-          lng,
-          speed: currentSpeed,
-          distance: Math.round(distance),
+          toll, timestamp: now, lat, lng, speed: currentSpeed, distance: Math.round(distance),
         });
       }
     }
@@ -88,16 +59,22 @@ export function useGPS({ onTollCrossed } = {}) {
     setError(null);
     setIsTracking(true);
     lastPositionRef.current = null;
+    lastProcessedRef.current = 0;
 
     watchIdRef.current = navigator.geolocation.watchPosition(
       (pos) => {
         const { latitude, longitude, speed: rawSpeed, accuracy } = pos.coords;
         const timestamp = pos.timestamp || Date.now();
 
-        // Ignorar lecturas con precisión muy mala (>100m)
-        if (accuracy > 100) return;
+        // Ignorar lecturas con precisión muy mala
+        if (accuracy > 150) return;
 
-        // Velocidad: usar la del GPS si existe, sino calcular manualmente
+        // Throttle: no procesar más de 1 vez cada 5 segundos
+        const now = Date.now();
+        if (now - lastProcessedRef.current < THROTTLE_MS) return;
+        lastProcessedRef.current = now;
+
+        // Velocidad
         let speedKmh;
         if (rawSpeed != null && rawSpeed >= 0) {
           speedKmh = msToKmh(rawSpeed);
@@ -105,13 +82,7 @@ export function useGPS({ onTollCrossed } = {}) {
           speedKmh = calculateSpeed(latitude, longitude, timestamp);
         }
 
-        // Guardar posición para el cálculo manual de velocidad
-        lastPositionRef.current = {
-          lat: latitude,
-          lng: longitude,
-          timestamp,
-          speed: speedKmh,
-        };
+        lastPositionRef.current = { lat: latitude, lng: longitude, timestamp, speed: speedKmh };
 
         setPosition({ lat: latitude, lng: longitude });
         setSpeed(speedKmh);
@@ -123,13 +94,11 @@ export function useGPS({ onTollCrossed } = {}) {
         switch (err.code) {
           case err.PERMISSION_DENIED:
             setError('Permiso de ubicación denegado. Actívalo en Ajustes > Safari > Ubicación.');
-            setPermissionState('denied');
             break;
           case err.POSITION_UNAVAILABLE:
             setError('No se pudo obtener tu ubicación. Verifica que el GPS esté activo.');
             break;
           case err.TIMEOUT:
-            // No marcar como error fatal, reintentar
             setError('Buscando señal GPS...');
             break;
           default:
@@ -137,9 +106,13 @@ export function useGPS({ onTollCrossed } = {}) {
         }
       },
       {
-        enableHighAccuracy: true,
-        maximumAge: 2000,
-        timeout: 15000,
+        // OPTIMIZACIÓN BATERÍA:
+        // enableHighAccuracy false usa WiFi/cell en vez de chip GPS cuando es suficiente
+        // maximumAge 5000 reutiliza lecturas de hasta 5s (menos wake del chip GPS)
+        // timeout 20000 da más tiempo antes de error
+        enableHighAccuracy: false,
+        maximumAge: 5000,
+        timeout: 20000,
       }
     );
   }, [checkTollProximity, calculateSpeed]);
@@ -155,19 +128,9 @@ export function useGPS({ onTollCrossed } = {}) {
 
   useEffect(() => {
     return () => {
-      if (watchIdRef.current != null) {
-        navigator.geolocation.clearWatch(watchIdRef.current);
-      }
+      if (watchIdRef.current != null) navigator.geolocation.clearWatch(watchIdRef.current);
     };
   }, []);
 
-  return {
-    position,
-    speed,
-    error,
-    isTracking,
-    permissionState,
-    startTracking,
-    stopTracking,
-  };
+  return { position, speed, error, isTracking, startTracking, stopTracking };
 }
