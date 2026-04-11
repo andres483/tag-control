@@ -2,8 +2,13 @@ import { useState, useEffect, useMemo } from 'react';
 import { getSavedTrips, clearTrips } from '../lib/storage';
 import { supabase } from '../lib/supabase';
 import { formatCLP, formatDate, formatTime } from '../lib/format';
+import { useUser } from '../App';
+
+const ADMIN_USER = 'Andres';
 
 export default function History() {
+  const { user } = useUser();
+  const isAdmin = user.name === ADMIN_USER;
   const [allTrips, setAllTrips] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showConfirmClear, setShowConfirmClear] = useState(false);
@@ -14,7 +19,10 @@ export default function History() {
       const local = getSavedTrips();
       let cloud = [];
       try {
-        const { data } = await supabase.from('trips').select('*').order('created_at', { ascending: false });
+        // Admin ve todos, usuarios normales solo los suyos
+        let query = supabase.from('trips').select('*').order('created_at', { ascending: false });
+        if (!isAdmin) query = query.eq('driver', user.name);
+        const { data } = await query;
         cloud = (data || []).map((t) => ({
           id: t.id, driver: t.driver,
           startTime: new Date(t.start_time).getTime(),
@@ -24,13 +32,15 @@ export default function History() {
         }));
       } catch {}
       const cloudIds = new Set(cloud.map((t) => t.id));
-      const merged = [...cloud, ...local.filter((t) => !cloudIds.has(t.id))];
+      // Local: filtrar por usuario también
+      const localFiltered = local.filter((t) => !cloudIds.has(t.id) && (isAdmin || t.driver === user.name));
+      const merged = [...cloud, ...localFiltered];
       merged.sort((a, b) => (b.startTime || 0) - (a.startTime || 0));
       setAllTrips(merged);
       setLoading(false);
     }
     load();
-  }, []);
+  }, [user.name, isAdmin]);
 
   const driverList = useMemo(() => {
     return [...new Set(allTrips.map(t => t.driver).filter(Boolean))].sort();
@@ -83,8 +93,8 @@ export default function History() {
     <div className="flex flex-col gap-4 p-5 pb-24">
       <h1 className="text-[22px] font-bold text-text tracking-tight">Historial</h1>
 
-      {/* Filtro */}
-      {driverList.length > 0 && (
+      {/* Filtro — solo admin ve todos los usuarios */}
+      {isAdmin && driverList.length > 0 && (
         <div className="flex gap-2 overflow-x-auto pb-1">
           {['todos', ...driverList].map((d) => (
             <button
