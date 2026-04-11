@@ -66,6 +66,10 @@ export function useTrip() {
     setDriver(null);
   }, [startTime, driver]);
 
+  const resumeTrip = useCallback(() => {
+    setIsActive(true);
+  }, []);
+
   const addCrossing = useCallback((crossing) => {
     setCrossings((prev) => [...prev, crossing]);
   }, []);
@@ -81,6 +85,7 @@ export function useTrip() {
     totalCost,
     tollCount,
     startTrip,
+    resumeTrip,
     endTrip,
     addCrossing,
   };

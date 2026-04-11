@@ -138,6 +138,15 @@ export default function Home() {
     }
   };
 
+  const handleResumeTrip = () => {
+    if (!tripIdRef.current) {
+      tripIdRef.current = 'trip-' + Date.now();
+    }
+    initAudio();
+    trip.resumeTrip();
+    gps.startTracking();
+  };
+
   const tarifaLabel = getTarifaLabel();
 
   // ─── PANTALLA ANTES DE INICIAR ───
@@ -249,16 +258,31 @@ export default function Home() {
         <p className="text-xs text-hongo mt-1">Tarifa {tarifaLabel.toLowerCase()}</p>
       </div>
 
-      <button
-        onClick={handleToggleTrip}
-        className={`w-full py-4 rounded-2xl font-bold text-lg transition-colors ${
-          trip.isActive
-            ? 'bg-red-600 active:bg-red-700 text-white'
-            : 'bg-negro active:bg-negro/80 text-cream'
-        }`}
-      >
-        {trip.isActive ? 'Detener viaje' : 'Nuevo viaje'}
-      </button>
+      {trip.isActive ? (
+        <button
+          onClick={handleToggleTrip}
+          className="w-full py-4 rounded-2xl font-bold text-lg bg-red-600 active:bg-red-700 text-white transition-colors"
+        >
+          Detener viaje
+        </button>
+      ) : (
+        <div className="flex gap-3">
+          {trip.crossings.length > 0 && (
+            <button
+              onClick={handleResumeTrip}
+              className="flex-1 py-4 rounded-2xl font-bold text-lg bg-primary active:bg-primary-dark text-cream transition-colors"
+            >
+              Reanudar
+            </button>
+          )}
+          <button
+            onClick={handleToggleTrip}
+            className="flex-1 py-4 rounded-2xl font-bold text-lg bg-negro active:bg-negro/80 text-cream transition-colors"
+          >
+            Nuevo viaje
+          </button>
+        </div>
+      )}
 
       {trip.isActive && (
         <div className="bg-primary-light rounded-xl p-4 text-primary">
