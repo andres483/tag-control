@@ -23,12 +23,14 @@ export function useGPS({ onTollCrossed } = {}) {
   }, [onTollCrossed]);
 
   useEffect(() => {
-    if ('permissions' in navigator) {
-      navigator.permissions.query({ name: 'geolocation' }).then((result) => {
-        setPermissionState(result.state);
-        result.addEventListener('change', () => setPermissionState(result.state));
-      }).catch(() => {});
-    }
+    try {
+      if (navigator?.permissions?.query) {
+        navigator.permissions.query({ name: 'geolocation' }).then((result) => {
+          setPermissionState(result.state);
+          result.addEventListener('change', () => setPermissionState(result.state));
+        }).catch(() => {});
+      }
+    } catch {}
   }, []);
 
   /**

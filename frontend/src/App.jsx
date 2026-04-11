@@ -1,8 +1,28 @@
+import { Component } from 'react';
 import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom';
 import Home from './pages/Home';
 import PlanRoute from './pages/PlanRoute';
 import History from './pages/History';
 import Settings from './pages/Settings';
+
+class ErrorBoundary extends Component {
+  constructor(props) { super(props); this.state = { error: null }; }
+  static getDerivedStateFromError(error) { return { error }; }
+  render() {
+    if (this.state.error) {
+      return (
+        <div style={{ padding: 20, textAlign: 'center' }}>
+          <h2>Algo salió mal</h2>
+          <p style={{ color: '#888', fontSize: 14 }}>{this.state.error.message}</p>
+          <button onClick={() => window.location.reload()} style={{ marginTop: 16, padding: '10px 24px', background: '#1A1A1A', color: '#fff', border: 'none', borderRadius: 12, fontSize: 16 }}>
+            Recargar
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const navItems = [
   {
@@ -60,12 +80,14 @@ export default function App() {
 
         {/* Content */}
         <main className="flex-1 overflow-y-auto pb-20">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/planificar" element={<PlanRoute />} />
-            <Route path="/historial" element={<History />} />
-            <Route path="/config" element={<Settings />} />
-          </Routes>
+          <ErrorBoundary>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/planificar" element={<PlanRoute />} />
+              <Route path="/historial" element={<History />} />
+              <Route path="/config" element={<Settings />} />
+            </Routes>
+          </ErrorBoundary>
         </main>
 
         {/* Bottom navigation */}
