@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useGPS } from '../hooks/useGPS';
 import { useTrip } from '../hooks/useTrip';
-import { getTarifaLabel } from '../lib/pricing';
+import { getTarifaLabel, getTarifa } from '../lib/pricing';
 import { formatCLP } from '../lib/format';
 import { playTollSound, initAudio } from '../lib/sound';
+import { upsertLiveTrip, insertLiveCrossing, endLiveTrip } from '../lib/liveTracking';
 import TollChip from '../components/TollChip';
 
 const DRIVER_KEY = 'tagcontrol_driver';
@@ -30,17 +31,63 @@ export default function Home() {
   const [drivers] = useState(getSavedDrivers);
   const trip = useTrip();
   const wakeLockRef = useRef(null);
+  const tripIdRef = useRef(null);
 
   const handleTollCrossed = useCallback(
     (crossing) => {
       if (!trip.isActive) return;
       trip.addCrossing(crossing);
       playTollSound();
+      // Enviar cruce a Supabase
+      if (tripIdRef.current) {
+        insertLiveCrossing({
+          tripId: tripIdRef.current,
+          tollId: crossing.toll.id,
+          tollNombre: crossing.toll.nombre,
+          tollRuta: crossing.toll.ruta,
+          tarifa: getTarifa(crossing.toll, new Date(crossing.timestamp)),
+          lat: crossing.lat,
+          lng: crossing.lng,
+        }).catch(() => {});
+      }
     },
     [trip.isActive, trip.addCrossing]
   );
 
   const gps = useGPS({ onTollCrossed: handleTollCrossed });
+
+  // Enviar posición a Supabase cada 10 segundos
+  useEffect(() => {
+    if (!trip.isActive || !gps.position || !tripIdRef.current) return;
+    const interval = setInterval(() => {
+      if (gps.position && tripIdRef.current) {
+        upsertLiveTrip({
+          id: tripIdRef.current,
+          driver: trip.driver || 'Sin nombre',
+          lat: gps.position.lat,
+          lng: gps.position.lng,
+          speed: gps.speed,
+          isActive: true,
+          totalCost: trip.totalCost,
+          tollCount: trip.tollCount,
+          lastToll: trip.crossings.length > 0 ? trip.crossings[trip.crossings.length - 1].toll.nombre : null,
+        }).catch(() => {});
+      }
+    }, 10000);
+    // Enviar inmediatamente también
+    upsertLiveTrip({
+      id: tripIdRef.current,
+      driver: trip.driver || 'Sin nombre',
+      lat: gps.position.lat,
+      lng: gps.position.lng,
+      speed: gps.speed,
+      isActive: true,
+      totalCost: trip.totalCost,
+      tollCount: trip.tollCount,
+      lastToll: trip.crossings.length > 0 ? trip.crossings[trip.crossings.length - 1].toll.nombre : null,
+    }).catch(() => {});
+    return () => clearInterval(interval);
+  }, [trip.isActive, gps.position?.lat, gps.position?.lng, trip.totalCost]);
 
   useEffect(() => {
     async function acquireWakeLock() {
@@ -72,6 +119,10 @@ export default function Home() {
     if (trip.isActive) {
       gps.stopTracking();
       trip.endTrip();
+      if (tripIdRef.current) {
+        endLiveTrip(tripIdRef.current).catch(() => {});
+        tripIdRef.current = null;
+      }
     } else {
       const name = newDriver.trim() || driver;
       if (name) {
@@ -79,6 +130,8 @@ export default function Home() {
         setDriver(name);
         setNewDriver('');
       }
+      const id = 'trip-' + Date.now();
+      tripIdRef.current = id;
       initAudio();
       trip.startTrip(name || 'Sin nombre');
       gps.startTracking();
