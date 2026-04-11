@@ -88,7 +88,7 @@ export function findTollsOnRoute(routePath, tolls, maxDistance = 500) {
   const found = [];
   for (const toll of tolls) {
     const dist = distanceToRoute(toll, routePath);
-    if (dist <= (toll.radio_deteccion_m || maxDistance)) {
+    if (dist <= maxDistance) {
       found.push({ ...toll, distanceToRoute: Math.round(dist) });
     }
   }

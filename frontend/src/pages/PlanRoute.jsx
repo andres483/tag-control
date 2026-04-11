@@ -52,15 +52,20 @@ export default function PlanRoute() {
   }, []);
 
   const handleSearch = useCallback(async () => {
-    if (!origin || !destination) return;
+    // Leer directamente del DOM (evita conflicto con Google Autocomplete)
+    const orig = originRef.current?.value || origin;
+    const dest = destRef.current?.value || destination;
+    if (!orig || !dest) return;
 
+    setOrigin(orig);
+    setDestination(dest);
     setLoading(true);
     setError(null);
     setRoutes(null);
     setSelectedIdx(0);
 
     try {
-      const routeResults = await getRoute(origin, destination);
+      const routeResults = await getRoute(orig, dest);
 
       const enriched = routeResults.map((route) => {
         const tollsOnRoute = findTollsOnRoute(route.path, tolls);
@@ -106,8 +111,6 @@ export default function PlanRoute() {
             ref={originRef}
             type="text"
             placeholder="Ej: Algarrobo"
-            defaultValue={origin}
-            onChange={(e) => setOrigin(e.target.value)}
             className="w-full bg-cream-dark border border-cream-dark rounded-xl px-4 py-3 text-sm text-negro placeholder-hongo focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
         </div>
@@ -117,8 +120,6 @@ export default function PlanRoute() {
             ref={destRef}
             type="text"
             placeholder="Ej: Santiago Centro"
-            defaultValue={destination}
-            onChange={(e) => setDestination(e.target.value)}
             className="w-full bg-cream-dark border border-cream-dark rounded-xl px-4 py-3 text-sm text-negro placeholder-hongo focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
         </div>

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tagcontrol-v1';
+const CACHE_NAME = 'tagcontrol-v2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -22,6 +22,14 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+
+  // No cachear APIs externas (Google Maps, etc.)
+  if (url.origin !== self.location.origin) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then((cached) => cached || fetch(event.request))
   );
