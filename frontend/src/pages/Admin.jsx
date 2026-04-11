@@ -617,37 +617,56 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
             {/* Tabla */}
             <div className="bg-cream/5 rounded-lg p-3">
               <p className="text-[10px] text-tierra mb-2">{growthView === 'acumulado' ? 'Acumulado' : 'Por día'}</p>
-              <div className="grid grid-cols-6 gap-0 text-[9px] text-tierra border-b border-cream/10 pb-1 mb-1 font-medium">
-                <span>Día</span><span className="text-center">Users</span><span className="text-center">Viajes</span><span className="text-center">Peajes</span><span className="text-right">Gasto</span><span className="text-right">%</span>
+              <div className="grid grid-cols-5 gap-0 text-[9px] text-tierra border-b border-cream/10 pb-1 mb-1 font-medium">
+                <span>Día</span><span className="text-center">Users</span><span className="text-center">Viajes</span><span className="text-center">Peajes</span><span className="text-right">Gasto</span>
               </div>
               {(() => {
                 const src = growthView === 'acumulado' ? cumulativeData : growthData;
-                return src.length === 0 ? (
-                  <p className="text-tierra text-xs text-center py-2">Sin datos</p>
-                ) : (
-                  src.map((day, i) => {
-                    const isCum = growthView === 'acumulado';
-                    const u = isCum ? day.cumUsers : day.newUsers;
-                    const t = isCum ? day.cumTrips : day.trips;
-                    const tl = isCum ? day.cumTolls : day.tolls;
-                    const g = isCum ? day.cumGasto : day.gasto;
-                    // Tasa: comparar con día anterior
-                    const prevG = i > 0 ? (isCum ? src[i-1].cumGasto : src[i-1].gasto) : 0;
-                    const rate = prevG > 0 ? Math.round(((g - prevG) / prevG) * 100) : null;
-                    return (
-                      <div key={day.date} className="grid grid-cols-6 gap-0 text-[11px] py-1.5 border-b border-cream/5">
-                        <span className="text-tierra">{day.date}</span>
-                        <span className="text-center">{u > 0 ? (isCum ? u : <span className="text-green-400">+{u}</span>) : '—'}</span>
-                        <span className="text-center">{t || '—'}</span>
-                        <span className="text-center">{tl || '—'}</span>
-                        <span className="text-right text-primary font-medium">{g > 0 ? formatCLP(g) : '—'}</span>
-                        <span className={`text-right text-[10px] ${rate > 0 ? 'text-green-400' : rate < 0 ? 'text-red-400' : 'text-tierra'}`}>
-                          {rate !== null ? (rate > 0 ? '+' : '') + rate + '%' : '—'}
-                        </span>
-                      </div>
-                    );
-                  })
-                );
+                if (src.length === 0) return <p className="text-tierra text-xs text-center py-2">Sin datos</p>;
+
+                function pct(curr, prev) {
+                  if (!prev || prev === 0) return null;
+                  return Math.round(((curr - prev) / prev) * 100);
+                }
+                function PctBadge({ rate }) {
+                  if (rate === null) return null;
+                  const color = rate > 0 ? 'text-green-400' : rate < 0 ? 'text-red-400' : 'text-tierra';
+                  return <span className={`${color} text-[8px] ml-0.5`}>{rate > 0 ? '+' : ''}{rate}%</span>;
+                }
+
+                return src.map((day, i) => {
+                  const isCum = growthView === 'acumulado';
+                  const u = isCum ? day.cumUsers : day.newUsers;
+                  const t = isCum ? day.cumTrips : day.trips;
+                  const tl = isCum ? day.cumTolls : day.tolls;
+                  const g = isCum ? day.cumGasto : day.gasto;
+                  const prev = i > 0 ? src[i-1] : null;
+                  const pu = prev ? (isCum ? prev.cumUsers : prev.newUsers) : 0;
+                  const pt = prev ? (isCum ? prev.cumTrips : prev.trips) : 0;
+                  const ptl = prev ? (isCum ? prev.cumTolls : prev.tolls) : 0;
+                  const pg = prev ? (isCum ? prev.cumGasto : prev.gasto) : 0;
+                  return (
+                    <div key={day.date} className="grid grid-cols-5 gap-0 text-[11px] py-1.5 border-b border-cream/5">
+                      <span className="text-tierra">{day.date}</span>
+                      <span className="text-center">
+                        {u > 0 ? (isCum ? u : <span className="text-green-400">+{u}</span>) : '—'}
+                        <PctBadge rate={pct(u, pu)} />
+                      </span>
+                      <span className="text-center">
+                        {t || '—'}
+                        <PctBadge rate={pct(t, pt)} />
+                      </span>
+                      <span className="text-center">
+                        {tl || '—'}
+                        <PctBadge rate={pct(tl, ptl)} />
+                      </span>
+                      <span className="text-right text-primary font-medium">
+                        {g > 0 ? formatCLP(g) : '—'}
+                        <PctBadge rate={pct(g, pg)} />
+                      </span>
+                    </div>
+                  );
+                });
               })()}
             </div>
 
