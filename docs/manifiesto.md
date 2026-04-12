@@ -1,8 +1,8 @@
-# Tag Control
+# TAGcontrol
 
 ## Tu peaje, bajo control.
 
-![Tag Control](../frontend/public/icons/icon.svg)
+![TAGcontrol](../frontend/public/icons/icon.svg)
 
 *Un pin de mapa con un check: cada peaje marcado, cada peso verificado.*
 
@@ -12,7 +12,7 @@ Cada mes, miles de familias chilenas cruzan peajes sin saber cuánto están gast
 
 Las concesionarias no lo hacen fácil. Cada autopista tiene su propia app, su propio portal, su propia lógica. Y si no tienes TAG, simplemente no existe registro alguno de lo que pagaste.
 
-**Tag Control cambia eso.**
+**TAGcontrol cambia eso.**
 
 Una sola app que detecta automáticamente cada peaje que cruzas en cualquier autopista de Chile. Sin TAG, sin contratos, sin letra chica.
 
@@ -45,7 +45,7 @@ Para cualquier persona que maneja por las autopistas de Chile y quiere tener con
 
 ---
 
-**Tag Control**
+**TAGcontrol**
 
 Construido en Chile, para Chile.
 

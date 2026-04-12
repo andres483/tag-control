@@ -1,22 +1,22 @@
-# Tag Control — Quiénes Somos
+# TAGcontrol — Quiénes Somos
 
-![Tag Control](../frontend/public/icons/icon.svg)
+![TAGcontrol](../frontend/public/icons/icon.svg)
 
 ---
 
 ## La historia
 
-Tag Control nació de una conversación simple entre un hijo y su papá.
+TAGcontrol nació de una conversación simple entre un hijo y su papá.
 
 Raúl vive en Algarrobo y viaja seguido a Santiago. Nunca quiso contratar TAG — le parecía caro y poco transparente. Pero tampoco tenía forma de saber cuánto gastaba en peajes cada mes.
 
-Un viernes de abril de 2026, decidimos resolver el problema. Ese mismo día, Raúl hizo su primer viaje con Tag Control. La app detectó el Peaje Troncal Zapata a las 15:38 hrs. Primer peaje registrado en la historia de Tag Control.
+Un viernes de abril de 2026, decidimos resolver el problema. Ese mismo día, Raúl hizo su primer viaje con TAGcontrol. La app detectó el Peaje Troncal Zapata a las 15:38 hrs. Primer peaje registrado en la historia de TAGcontrol.
 
 Desde ahí, no paramos.
 
 ---
 
-## Qué es Tag Control
+## Qué es TAGcontrol
 
 Una Progressive Web App (PWA) que usa el GPS del celular para detectar automáticamente cada peaje que cruzas en las autopistas de Chile.
 
@@ -53,7 +53,7 @@ No necesitas TAG. No necesitas descargar nada del App Store. Abres un link, crea
 
 ## El equipo
 
-Tag Control es un proyecto familiar construido con tecnología moderna:
+TAGcontrol es un proyecto familiar construido con tecnología moderna:
 
 - **React + Vite** para una app rápida y liviana
 - **Supabase** para datos en la nube en tiempo real

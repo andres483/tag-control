@@ -1,6 +1,6 @@
 {
-  "name": "Tag Control",
-  "short_name": "TagControl",
+  "name": "TAGcontrol",
+  "short_name": "TAGcontrol",
   "description": "Tu peaje, bajo control. Registra y estima tus gastos en autopistas.",
   "start_url": "/",
   "display": "standalone",

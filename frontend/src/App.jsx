@@ -75,7 +75,7 @@ function AppShell({ user, logout }) {
                 <path d="M232 210 L250 228 L284 188" fill="none" stroke="#A7F3D0" strokeWidth="16" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </div>
-            <span className="font-semibold text-text text-[17px] tracking-tight">Tag Control</span>
+            <span className="font-semibold text-text text-[17px] tracking-tight">TAGcontrol</span>
           </div>
           <button
             onClick={() => { if (window.confirm('¿Cerrar sesión?')) logout(); }}

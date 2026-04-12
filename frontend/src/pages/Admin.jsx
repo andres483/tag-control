@@ -21,7 +21,7 @@ export default function Admin() {
     return (
       <div className="min-h-screen bg-text flex items-center justify-center p-4">
         <div className="bg-white/5 rounded-2xl p-8 max-w-xs w-full text-center">
-          <p className="text-lg font-bold text-white mb-1">Tag Control Admin</p>
+          <p className="text-lg font-bold text-white mb-1">TAGcontrol Admin</p>
           <p className="text-sm text-gray-400 mb-6">Ingresa el PIN</p>
           <input
             type="password"

@@ -52,7 +52,7 @@ export default function AuthGate({ children }) {
               <path d="M232 210 L250 228 L284 188" fill="none" stroke="#A7F3D0" strokeWidth="16" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
-          <h1 style={{ fontSize: 28, fontWeight: 700, color: '#212529', margin: '0 0 4px', letterSpacing: '-0.5px' }}>Tag Control</h1>
+          <h1 style={{ fontSize: 28, fontWeight: 700, color: '#212529', margin: '0 0 4px', letterSpacing: '-0.5px' }}>TAGcontrol</h1>
           <p style={{ fontSize: 15, color: '#868E96', margin: 0 }}>Controla tus gastos en peajes</p>
         </div>
 
