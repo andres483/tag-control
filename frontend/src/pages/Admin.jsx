@@ -274,24 +274,30 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
   // Calcular datos de growth por día
   const growthData = useMemo(() => {
     const days = {};
-    const toKey = (d) => d.toISOString().slice(0, 10); // YYYY-MM-DD for sorting
-    const toLabel = (d) => d.toLocaleDateString('es-CL'); // display
+    // Usar hora local (no UTC) para agrupar por día
+    const toKey = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const toLabel = (d) => d.toLocaleDateString('es-CL');
     for (const u of users) {
       const d = new Date(u.created_at);
       const key = toKey(d);
       if (!days[key]) days[key] = { date: toLabel(d), sortKey: key, newUsers: 0, trips: 0, gasto: 0, tolls: 0 };
       days[key].newUsers++;
     }
-    for (const t of completedTrips) {
-      const d = new Date(t.start_time);
+    // Incluir tanto viajes completados como live_trips
+    const allTripsForGrowth = [
+      ...completedTrips.map(t => ({ time: t.start_time, cost: t.total_cost || 0, tolls: t.toll_count || 0 })),
+      ...liveTrips.map(t => ({ time: t.created_at, cost: t.total_cost || 0, tolls: t.toll_count || 0 })),
+    ];
+    for (const t of allTripsForGrowth) {
+      const d = new Date(t.time);
       const key = toKey(d);
       if (!days[key]) days[key] = { date: toLabel(d), sortKey: key, newUsers: 0, trips: 0, gasto: 0, tolls: 0 };
       days[key].trips++;
-      days[key].gasto += t.total_cost || 0;
-      days[key].tolls += t.toll_count || 0;
+      days[key].gasto += t.cost;
+      days[key].tolls += t.tolls;
     }
     return Object.values(days).sort((a, b) => a.sortKey.localeCompare(b.sortKey));
-  }, [users, completedTrips]);
+  }, [users, completedTrips, liveTrips]);
 
   // Datos acumulados
   const cumulativeData = useMemo(() => {
@@ -581,10 +587,10 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
                         <div className="flex items-end gap-[2px] h-12 mt-1">
                           {sliced.map((day) => {
                             const val = day[chart.key] || 0;
-                            const h = Math.max((val / max) * 100, 3);
+                            const hPx = Math.max(Math.round((val / max) * 48), 2);
                             return (
-                              <div key={day.date} className="flex-1 h-full flex items-end">
-                                <div className="w-full rounded-sm" style={{ height: `${h}%`, background: chart.color, minHeight: 2 }} />
+                              <div key={day.date} className="flex-1 flex items-end h-full">
+                                <div className="w-full rounded-sm" style={{ height: `${hPx}px`, background: chart.color }} />
                               </div>
                             );
                           })}
