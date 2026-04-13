@@ -38,18 +38,15 @@ export default function Settings() {
     if (selectedTrip) {
       getTripCrossings(selectedTrip.id).then(setCrossings);
     }
-  }, [selectedTrip?.id, selectedTrip?.toll_count]);
+  }, [selectedTrip?.id]);
 
   // Auto-refresh cada 10s
   useEffect(() => {
     const interval = setInterval(() => {
       loadTrips();
-      if (selectedTrip) {
-        getTripCrossings(selectedTrip.id).then(setCrossings);
-      }
     }, 10000);
     return () => clearInterval(interval);
-  }, [selectedTrip?.id]);
+  }, []);
 
   if (loading) {
     return (

@@ -1,21 +1,15 @@
-import { useMemo } from 'react';
 import tollsData from '../data/tolls.json';
 
+// Static data — computed once at module level, no need for useMemo
+const tolls = tollsData.tolls;
+const tollsByRoute = {};
+for (const toll of tolls) {
+  if (!tollsByRoute[toll.ruta]) tollsByRoute[toll.ruta] = [];
+  tollsByRoute[toll.ruta].push(toll);
+}
+const routes = Object.keys(tollsByRoute);
+
 export function useTolls() {
-  const tolls = tollsData.tolls;
-
-  const tollsByRoute = useMemo(() => {
-    const grouped = {};
-    for (const toll of tolls) {
-      if (!grouped[toll.ruta]) grouped[toll.ruta] = [];
-      grouped[toll.ruta].push(toll);
-    }
-    return grouped;
-  }, [tolls]);
-
-  const routes = useMemo(() => Object.keys(tollsByRoute), [tollsByRoute]);
-
   const getTollById = (id) => tolls.find((t) => t.id === id);
-
   return { tolls, tollsByRoute, routes, getTollById };
 }

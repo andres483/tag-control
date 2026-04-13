@@ -81,25 +81,30 @@ export default function Home() {
 
   const gps = useGPS({ onTollCrossed: handleTollCrossed });
   const stoppedSinceRef = useRef(null);
+  const tripStateRef = useRef({ totalCost: 0, tollCount: 0, crossings: [] });
 
-  // Enviar posición a Supabase cada 30 segundos + guardar breadcrumb GPS
-  // + auto-cerrar viaje si el auto lleva 15 min detenido
+  // Mantener ref sincronizada con trip state (evita re-renders del effect)
+  useEffect(() => {
+    tripStateRef.current = { totalCost: trip.totalCost, tollCount: trip.tollCount, crossings: trip.crossings };
+  }, [trip.totalCost, trip.tollCount, trip.crossings]);
+
+  // Enviar posición a Supabase cada 30 segundos + auto-cierre 15 min detenido
   useEffect(() => {
     if (!trip.isActive || !gps.position || !tripIdRef.current) return;
     const sendPosition = () => {
       if (!gps.position || !tripIdRef.current) return;
-      const payload = {
+      const { totalCost, tollCount, crossings } = tripStateRef.current;
+      upsertLiveTrip({
         id: tripIdRef.current,
         driver: user.name,
         lat: gps.position.lat,
         lng: gps.position.lng,
         speed: gps.speed,
         isActive: true,
-        totalCost: trip.totalCost,
-        tollCount: trip.tollCount,
-        lastToll: trip.crossings.length > 0 ? trip.crossings[trip.crossings.length - 1].toll.nombre : null,
-      };
-      upsertLiveTrip(payload).catch(() => {});
+        totalCost,
+        tollCount,
+        lastToll: crossings.length > 0 ? (crossings[crossings.length - 1].toll?.nombre || 'Peaje') : null,
+      }).catch(() => {});
       insertPosition({
         tripId: tripIdRef.current,
         lat: gps.position.lat,
@@ -107,11 +112,10 @@ export default function Home() {
         speed: gps.speed,
       }).catch(() => {});
 
-      // Auto-cierre: si velocidad < 5 km/h por 15 minutos, cerrar viaje
-      if (gps.speed < 5) {
+      // Auto-cierre: si velocidad < 5 km/h por 15 min (ignorar null/undefined = GPS perdido)
+      if (gps.speed != null && gps.speed < 5) {
         if (!stoppedSinceRef.current) stoppedSinceRef.current = Date.now();
-        const stoppedMin = (Date.now() - stoppedSinceRef.current) / 60000;
-        if (stoppedMin >= 15) {
+        if ((Date.now() - stoppedSinceRef.current) / 60000 >= 15) {
           gps.stopTracking();
           stopBackgroundKeepAlive();
           trip.endTrip();
@@ -128,7 +132,7 @@ export default function Home() {
     const interval = setInterval(sendPosition, 30000);
     sendPosition();
     return () => clearInterval(interval);
-  }, [trip.isActive, gps.position?.lat, gps.position?.lng, trip.totalCost]);
+  }, [trip.isActive, gps.position?.lat, gps.position?.lng, user.name]);
 
   useEffect(() => {
     async function acquireWakeLock() {
@@ -166,12 +170,12 @@ export default function Home() {
         tripIdRef.current = null;
       }
     } else {
-      const id = 'trip-' + Date.now();
+      const id = `trip-${user.name}-${Date.now()}`;
       tripIdRef.current = id;
       initAudio();
       startBackgroundKeepAlive();
       cleanupOldPositions().catch(() => {});
-      closeOrphanedTrips(user.name, id).catch(() => {}); // Cerrar viajes huérfanos
+      closeOrphanedTrips(user.name, id).catch(() => {});
       trip.startTrip(user.name);
       gps.startTracking();
     }
@@ -179,7 +183,7 @@ export default function Home() {
 
   const handleResumeTrip = () => {
     if (!tripIdRef.current) {
-      tripIdRef.current = 'trip-' + Date.now();
+      tripIdRef.current = `trip-${user.name}-${Date.now()}`;
     }
     initAudio();
     startBackgroundKeepAlive();
