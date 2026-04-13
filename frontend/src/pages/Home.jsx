@@ -240,7 +240,7 @@ export default function Home() {
             onClick={handleToggleTrip}
             className="w-full py-[16px] rounded-2xl font-semibold text-[17px] text-white bg-primary active:bg-primary-dark transition-all shadow-sm mb-3"
           >
-            Comenzar viaje
+            Iniciar viaje
           </button>
 
           <div className="grid grid-cols-4 gap-2 mb-3">
