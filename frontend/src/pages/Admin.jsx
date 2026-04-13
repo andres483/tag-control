@@ -753,6 +753,11 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
             </div>
           </div>
         )}
+
+        {/* Powered by */}
+        <p className="text-center text-[11px] text-gray-600 pt-6 pb-4">
+          powered by <a href="https://weareblooming.co" target="_blank" rel="noopener noreferrer" className="hover:text-gray-400 transition-colors">Blooming</a>
+        </p>
       </div>
     </div>
   );
