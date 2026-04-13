@@ -29,8 +29,8 @@
       "tarifa_semana": 535,
       "tarifa_punta": 1030,
       "tarifa_saturacion": 1560,
-      "lat": -33.418,
-      "lng": -70.7909,
+      "lat": -33.4203,
+      "lng": -70.7942,
       "radio_deteccion_m": 300
     },
     {
@@ -40,8 +40,8 @@
       "tarifa_semana": 365,
       "tarifa_punta": 702,
       "tarifa_saturacion": 1065,
-      "lat": -33.413,
-      "lng": -70.7666,
+      "lat": -33.4121,
+      "lng": -70.7585,
       "radio_deteccion_m": 300
     },
     {
@@ -51,8 +51,8 @@
       "tarifa_semana": 240,
       "tarifa_punta": 461,
       "tarifa_saturacion": 700,
-      "lat": -33.4118,
-      "lng": -70.7396,
+      "lat": -33.4116,
+      "lng": -70.7333,
       "radio_deteccion_m": 300
     },
     {
@@ -62,8 +62,8 @@
       "tarifa_semana": 716,
       "tarifa_punta": 1378,
       "tarifa_saturacion": 2097,
-      "lat": -33.4264,
-      "lng": -70.67,
+      "lat": -33.4078,
+      "lng": -70.712,
       "radio_deteccion_m": 300
     },
     {
@@ -73,8 +73,8 @@
       "tarifa_semana": 119,
       "tarifa_punta": 230,
       "tarifa_saturacion": 348,
-      "lat": -33.4303,
-      "lng": -70.6572,
+      "lat": -33.411,
+      "lng": -70.6979,
       "radio_deteccion_m": 350
     },
     {
@@ -84,8 +84,8 @@
       "tarifa_semana": 413,
       "tarifa_punta": 795,
       "tarifa_saturacion": 1204,
-      "lat": -33.4302,
-      "lng": -70.658,
+      "lat": -33.4281,
+      "lng": -70.6631,
       "radio_deteccion_m": 400
     },
     {
@@ -95,8 +95,8 @@
       "tarifa_semana": 226,
       "tarifa_punta": 435,
       "tarifa_saturacion": 658,
-      "lat": -33.427,
-      "lng": -70.64,
+      "lat": -33.4224,
+      "lng": -70.6803,
       "radio_deteccion_m": 350
     },
     {
@@ -106,8 +106,8 @@
       "tarifa_semana": 719,
       "tarifa_punta": 1384,
       "tarifa_saturacion": 2097,
-      "lat": -33.4241,
-      "lng": -70.6219,
+      "lat": -33.419,
+      "lng": -70.635,
       "radio_deteccion_m": 400
     },
     {
@@ -117,8 +117,8 @@
       "tarifa_semana": 234,
       "tarifa_punta": 450,
       "tarifa_saturacion": 682,
-      "lat": -33.4221,
-      "lng": -70.6198,
+      "lat": -33.417,
+      "lng": -70.62,
       "radio_deteccion_m": 350
     },
     {
@@ -128,8 +128,8 @@
       "tarifa_semana": 264,
       "tarifa_punta": 509,
       "tarifa_saturacion": 771,
-      "lat": -33.3944,
-      "lng": -70.6034,
+      "lat": -33.4153,
+      "lng": -70.6077,
       "radio_deteccion_m": 300
     },
     {
@@ -172,8 +172,8 @@
       "tarifa_semana": 250,
       "tarifa_punta": 482,
       "tarifa_saturacion": 730,
-      "lat": -33.3875,
-      "lng": -70.5421,
+      "lat": -33.3988,
+      "lng": -70.5731,
       "radio_deteccion_m": 300
     },
     {
