@@ -8,6 +8,7 @@ export default function AuthGate({ children }) {
   const [mode, setMode] = useState('login');
   const [name, setName] = useState('');
   const [pin, setPin] = useState('');
+  const [email, setEmail] = useState('');
   const [showPin, setShowPin] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -23,7 +24,7 @@ export default function AuthGate({ children }) {
     setError('');
     try {
       const u = mode === 'register'
-        ? await registerUser(name.trim(), pin)
+        ? await registerUser(name.trim(), pin, email.trim())
         : await loginUser(name.trim(), pin);
       setUser(u);
     } catch (err) {
@@ -77,6 +78,18 @@ export default function AuthGate({ children }) {
               style={s.input}
             />
           </div>
+          {mode === 'register' && (
+            <div>
+              <label style={{ fontSize: 14, fontWeight: 600, color: '#495057', display: 'block', marginBottom: 6 }}>Email <span style={{ fontWeight: 400, color: '#ADB5BD' }}>(opcional)</span></label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="tu@email.com"
+                style={s.input}
+              />
+            </div>
+          )}
           <div>
             <label style={{ fontSize: 14, fontWeight: 600, color: '#495057', display: 'block', marginBottom: 6 }}>PIN</label>
             <div style={{ position: 'relative' }}>
