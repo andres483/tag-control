@@ -79,3 +79,41 @@ export function initAudio() {
     osc.stop(ctx.currentTime + 0.01);
   } catch {}
 }
+
+/**
+ * Audio silencioso en loop para mantener la app viva en background (iOS).
+ * iOS suspende tabs que no reproducen audio — este truco lo evita.
+ * DEBE iniciarse desde un gesto del usuario (Comenzar viaje).
+ */
+let keepAliveOsc = null;
+let keepAliveGain = null;
+
+export function startBackgroundKeepAlive() {
+  try {
+    stopBackgroundKeepAlive();
+    const ctx = getAudioContext();
+    if (ctx.state === 'suspended') ctx.resume();
+    keepAliveOsc = ctx.createOscillator();
+    keepAliveGain = ctx.createGain();
+    // Volumen casi inaudible pero suficiente para que iOS mantenga el tab vivo
+    keepAliveGain.gain.value = 0.001;
+    keepAliveOsc.frequency.value = 20; // 20Hz — inaudible para humanos
+    keepAliveOsc.connect(keepAliveGain);
+    keepAliveGain.connect(ctx.destination);
+    keepAliveOsc.start();
+  } catch {}
+}
+
+export function stopBackgroundKeepAlive() {
+  try {
+    if (keepAliveOsc) {
+      keepAliveOsc.stop();
+      keepAliveOsc.disconnect();
+      keepAliveOsc = null;
+    }
+    if (keepAliveGain) {
+      keepAliveGain.disconnect();
+      keepAliveGain = null;
+    }
+  } catch {}
+}

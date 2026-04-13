@@ -34,6 +34,39 @@ export async function insertLiveCrossing({ tripId, tollId, tollNombre, tollRuta,
 }
 
 /**
+ * Guarda un breadcrumb de posición GPS para reconstruir la ruta después.
+ */
+export async function insertPosition({ tripId, lat, lng, speed }) {
+  await supabase.from('positions').insert({
+    trip_id: tripId,
+    lat,
+    lng,
+    speed,
+  });
+}
+
+/**
+ * Limpia posiciones GPS de más de 24 horas (caché temporal).
+ * Llamar al inicio de cada viaje.
+ */
+export async function cleanupOldPositions() {
+  const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  await supabase.from('positions').delete().lt('created_at', cutoff);
+}
+
+/**
+ * Obtiene las posiciones GPS de un viaje (para dibujar ruta).
+ */
+export async function getTripPositions(tripId) {
+  const { data } = await supabase
+    .from('positions')
+    .select('*')
+    .eq('trip_id', tripId)
+    .order('created_at', { ascending: true });
+  return data || [];
+}
+
+/**
  * Marca un viaje como terminado.
  */
 export async function endLiveTrip(id) {

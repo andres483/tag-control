@@ -3,8 +3,8 @@ import { useGPS } from '../hooks/useGPS';
 import { useTrip } from '../hooks/useTrip';
 import { getTarifaLabel, getTarifa } from '../lib/pricing';
 import { formatCLP } from '../lib/format';
-import { playTollSound, initAudio } from '../lib/sound';
-import { upsertLiveTrip, insertLiveCrossing, endLiveTrip } from '../lib/liveTracking';
+import { playTollSound, initAudio, startBackgroundKeepAlive, stopBackgroundKeepAlive } from '../lib/sound';
+import { upsertLiveTrip, insertLiveCrossing, endLiveTrip, insertPosition, cleanupOldPositions } from '../lib/liveTracking';
 import { inferMissingTolls } from '../lib/inference';
 import { supabase } from '../lib/supabase';
 import TollChip from '../components/TollChip';
@@ -81,36 +81,33 @@ export default function Home() {
 
   const gps = useGPS({ onTollCrossed: handleTollCrossed });
 
-  // Enviar posición a Supabase cada 10 segundos
+  // Enviar posición a Supabase cada 30 segundos + guardar breadcrumb GPS
   useEffect(() => {
     if (!trip.isActive || !gps.position || !tripIdRef.current) return;
-    const interval = setInterval(() => {
-      if (gps.position && tripIdRef.current) {
-        upsertLiveTrip({
-          id: tripIdRef.current,
-          driver: user.name,
-          lat: gps.position.lat,
-          lng: gps.position.lng,
-          speed: gps.speed,
-          isActive: true,
-          totalCost: trip.totalCost,
-          tollCount: trip.tollCount,
-          lastToll: trip.crossings.length > 0 ? trip.crossings[trip.crossings.length - 1].toll.nombre : null,
-        }).catch(() => {});
-      }
-    }, 30000); // Cada 30s (ahorra batería y datos)
-    // Enviar inmediatamente también
-    upsertLiveTrip({
-      id: tripIdRef.current,
-      driver: user.name,
-      lat: gps.position.lat,
-      lng: gps.position.lng,
-      speed: gps.speed,
-      isActive: true,
-      totalCost: trip.totalCost,
-      tollCount: trip.tollCount,
-      lastToll: trip.crossings.length > 0 ? trip.crossings[trip.crossings.length - 1].toll.nombre : null,
-    }).catch(() => {});
+    const sendPosition = () => {
+      if (!gps.position || !tripIdRef.current) return;
+      const payload = {
+        id: tripIdRef.current,
+        driver: user.name,
+        lat: gps.position.lat,
+        lng: gps.position.lng,
+        speed: gps.speed,
+        isActive: true,
+        totalCost: trip.totalCost,
+        tollCount: trip.tollCount,
+        lastToll: trip.crossings.length > 0 ? trip.crossings[trip.crossings.length - 1].toll.nombre : null,
+      };
+      upsertLiveTrip(payload).catch(() => {});
+      // Guardar breadcrumb de posición para historial de ruta
+      insertPosition({
+        tripId: tripIdRef.current,
+        lat: gps.position.lat,
+        lng: gps.position.lng,
+        speed: gps.speed,
+      }).catch(() => {});
+    };
+    const interval = setInterval(sendPosition, 30000);
+    sendPosition(); // Enviar inmediatamente
     return () => clearInterval(interval);
   }, [trip.isActive, gps.position?.lat, gps.position?.lng, trip.totalCost]);
 
@@ -143,6 +140,7 @@ export default function Home() {
   const handleToggleTrip = () => {
     if (trip.isActive) {
       gps.stopTracking();
+      stopBackgroundKeepAlive();
       trip.endTrip();
       if (tripIdRef.current) {
         endLiveTrip(tripIdRef.current).catch(() => {});
@@ -152,6 +150,8 @@ export default function Home() {
       const id = 'trip-' + Date.now();
       tripIdRef.current = id;
       initAudio();
+      startBackgroundKeepAlive();
+      cleanupOldPositions().catch(() => {}); // Limpiar posiciones viejas (>24h)
       trip.startTrip(user.name);
       gps.startTracking();
     }
@@ -162,6 +162,7 @@ export default function Home() {
       tripIdRef.current = 'trip-' + Date.now();
     }
     initAudio();
+    startBackgroundKeepAlive();
     trip.resumeTrip();
     gps.startTracking();
   };
@@ -257,7 +258,7 @@ export default function Home() {
           </div>
 
           <p className="text-[11px] text-text-tertiary text-center pb-1">
-            Mantén Safari abierto durante el viaje &middot; Tarifa {tarifaLabel.toLowerCase()}
+            Funciona en segundo plano &middot; Tarifa {tarifaLabel.toLowerCase()}
           </p>
 
           {/* Powered by */}
@@ -300,9 +301,9 @@ export default function Home() {
 
       {/* Aviso compacto */}
       {trip.isActive && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-2.5 flex items-center gap-2">
-          <span className="text-[14px]">⚠️</span>
-          <p className="text-[12px] text-yellow-800"><strong>No cierres esta pantalla</strong> — los peajes no se detectarán</p>
+        <div className="bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-2.5 flex items-center gap-2">
+          <span className="text-[14px]">✓</span>
+          <p className="text-[12px] text-emerald-800"><strong>Viaje activo</strong> — puedes cambiar de app, seguimos detectando</p>
         </div>
       )}
 
