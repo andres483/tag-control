@@ -690,7 +690,7 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
                   const w = Math.max((cost / max) * 100, 4);
                   return (
                     <div key={u.name} className="flex items-center gap-2 mb-1.5">
-                      <span className="text-[11px] w-12 shrink-0 truncate">{u.name}</span>
+                      <span className="text-[11px] w-20 shrink-0 truncate">{u.name}</span>
                       <div className="flex-1 bg-white/5 rounded-full h-5">
                         <div className="bg-primary h-5 rounded-full flex items-center px-1.5" style={{ width: `${w}%`, minWidth: 36 }}>
                           <span className="text-[10px] text-white whitespace-nowrap">{formatCLP(cost)}</span>
