@@ -247,13 +247,13 @@ export default function Home() {
 
           <div className="grid grid-cols-4 gap-2 mb-3">
             {[
-              ['📍', 'Iniciar viaje'],
-              ['📡', 'GPS detecta'],
-              ['🔔', 'Suena alerta'],
-              ['✅', 'Ver resumen'],
+              [<svg key="ic1" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" /></svg>, 'Iniciar viaje'],
+              [<svg key="ic2" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9.348 14.651a3.75 3.75 0 010-5.303m5.304 0a3.75 3.75 0 010 5.303m-7.425 2.122a6.75 6.75 0 010-9.546m9.546 0a6.75 6.75 0 010 9.546M5.106 18.894c-3.808-3.808-3.808-9.98 0-13.789m13.788 0c3.808 3.808 3.808 9.981 0 13.79M12 12h.008v.007H12V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" /></svg>, 'GPS detecta'],
+              [<svg key="ic3" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" /></svg>, 'Suena alerta'],
+              [<svg key="ic4" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>, 'Ver resumen'],
             ].map(([icon, label], i) => (
-              <div key={i} className="bg-surface-secondary rounded-xl py-2.5 px-1 text-center">
-                <span className="text-[18px]">{icon}</span>
+              <div key={i} className="bg-surface-secondary rounded-xl py-2.5 px-1 text-center flex flex-col items-center">
+                <span className="text-text-tertiary">{icon}</span>
                 <p className="text-[10px] text-text-secondary mt-0.5 leading-tight">{label}</p>
               </div>
             ))}
