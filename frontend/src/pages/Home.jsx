@@ -122,10 +122,11 @@ export default function Home() {
         speed: gps.speed,
       }).catch(() => {});
 
-      // Auto-cierre: si velocidad < 5 km/h por 15 min (ignorar null/undefined = GPS perdido)
+      // Auto-cierre: si velocidad < 5 km/h por 30 min (ignorar null/undefined = GPS perdido)
+      // 30 min porque tacos en Santiago pueden ser 15-20 min fácilmente
       if (gps.speed != null && gps.speed < 5) {
         if (!stoppedSinceRef.current) stoppedSinceRef.current = Date.now();
-        if ((Date.now() - stoppedSinceRef.current) / 60000 >= 15) {
+        if ((Date.now() - stoppedSinceRef.current) / 60000 >= 30) {
           gps.stopTracking();
           stopBackgroundKeepAlive();
           stopBackgroundService();

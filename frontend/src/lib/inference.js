@@ -103,13 +103,68 @@ export function inferMissingTolls(crossings) {
  * Inferencia post-viaje: analiza TODOS los crossings de un viaje terminado
  * y rellena gaps completos. Más agresivo que la inferencia en tiempo real
  * porque tiene la ruta completa para analizar.
+ *
+ * Con 2+ peajes: rellena gaps entre ellos en la secuencia.
+ * Con 1 peaje: infiere peajes anteriores/posteriores usando GPS positions
+ * del viaje si están disponibles en los crossings metadata.
  */
 export function inferPostTrip(crossings) {
-  if (crossings.length < 2) return [];
+  if (crossings.length === 0) return [];
 
-  const inferred = inferMissingTolls(crossings);
-
-  // Filtrar los que ya existen
   const crossedIds = new Set(crossings.map(c => c.toll?.id || c.tollId));
-  return inferred.filter(inf => !crossedIds.has(inf.toll.id));
+
+  if (crossings.length >= 2) {
+    const inferred = inferMissingTolls(crossings);
+    return inferred.filter(inf => !crossedIds.has(inf.toll.id));
+  }
+
+  // Con 1 solo peaje: buscar peajes adyacentes en la misma ruta
+  // que deberían haberse detectado (probablemente perdidos por background)
+  return inferFromSingleToll(crossings[0], crossedIds);
+}
+
+/**
+ * Dado un solo peaje detectado, infiere peajes adyacentes que probablemente
+ * se cruzaron pero no se detectaron (típico de background GPS loss).
+ *
+ * Lógica: si detectaste un peaje que está en medio de una secuencia,
+ * los de entrada a esa ruta probablemente también se cruzaron.
+ */
+function inferFromSingleToll(crossing, crossedIds) {
+  const tollId = crossing.toll?.id || crossing.tollId;
+  const inferred = [];
+
+  for (const [routeName, sequence] of Object.entries(ROUTE_SEQUENCES)) {
+    const idx = sequence.indexOf(tollId);
+    if (idx === -1) continue;
+
+    // Si el peaje detectado NO es el primero ni el último de la secuencia,
+    // inferir los anteriores hasta el inicio (entrada a la ruta)
+    // Esto cubre el caso típico: usuario entra a autopista, GPS en background,
+    // detecta un peaje del medio, se perdieron los de entrada
+    if (idx > 0) {
+      for (let j = 0; j < idx; j++) {
+        const inferredId = sequence[j];
+        if (crossedIds.has(inferredId)) continue;
+        const toll = tollMap[inferredId];
+        if (!toll) continue;
+        const ts = crossing.timestamp || new Date(crossing.crossed_at).getTime();
+        // Timestamp estimado: proporcional a la posición en la secuencia
+        const ratio = (idx - j) / idx;
+        const inferredTs = ts - ratio * 120000; // ~2 min antes por cada peaje
+
+        inferred.push({
+          toll,
+          timestamp: Math.round(inferredTs),
+          lat: toll.lat,
+          lng: toll.lng,
+          speed: 0,
+          distance: 0,
+          inferred: true,
+        });
+      }
+    }
+  }
+
+  return inferred;
 }

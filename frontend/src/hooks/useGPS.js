@@ -7,7 +7,7 @@ const MIN_SPEED_KMH = 20;
 const COOLDOWN_MS = 120000;
 const THROTTLE_MS = 3000; // Procesar GPS máximo cada 3 segundos
 const MAX_ACCURACY_M = 300; // Aceptar lecturas hasta 300m (iOS post-background da ~200m)
-const TOLL_CHECK_ACCURACY_M = 500; // Para chequeo de peajes, ser más permisivo
+const TOLL_CHECK_ACCURACY_M = 1000; // Para chequeo de peajes, aceptar incluso en túneles
 
 export function useGPS({ onTollCrossed } = {}) {
   const [position, setPosition] = useState(null);
@@ -49,9 +49,9 @@ export function useGPS({ onTollCrossed } = {}) {
       const radius = baseRadius + accuracyBonus;
 
       // Velocidad: si GPS reporta rawSpeed, confiar en ella.
-      // Si no hay speed (post-background, iOS), y estamos DENTRO del radio,
+      // Si no hay speed (post-background, iOS), y estamos DENTRO del radio expandido,
       // asumir que están en movimiento (nadie se detiene dentro de un pórtico)
-      const speedOk = currentSpeed >= MIN_SPEED_KMH || (currentSpeed === 0 && distance <= baseRadius);
+      const speedOk = currentSpeed >= MIN_SPEED_KMH || (currentSpeed === 0 && distance <= radius);
 
       if (distance <= radius && speedOk && !isInCooldown) {
         cooldownsRef.current[toll.id] = now;
