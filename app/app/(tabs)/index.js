@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, AppState } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, AppState, Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useUser } from '../_layout';
 import { formatCLP, formatTime } from '../../src/lib/format';
@@ -156,6 +156,7 @@ export default function HomeScreen() {
               start_time: new Date(startTime || allCrossings[0].timestamp).toISOString(),
               end_time: new Date().toISOString(),
               total_cost: cost, toll_count: allCrossings.length, routes,
+              platform: Platform.OS,
               crossings: allCrossings.map(c => ({
                 tollId: c.toll.id, tollNombre: c.toll.nombre, tollRuta: c.toll.ruta,
                 tarifa: getTarifa(c.toll, new Date(c.timestamp)),

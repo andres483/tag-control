@@ -65,6 +65,7 @@ export function useTrip() {
         toll_count: tripData.tollCount,
         routes: tripData.routes,
         crossings: tripData.crossings,
+        platform: 'web',
       }).then(({ error }) => {
         if (error) {
           console.warn('Supabase save error:', error.message);

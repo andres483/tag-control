@@ -462,7 +462,12 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
                             <span className="text-white font-bold">{t.driver?.charAt(0)?.toUpperCase()}</span>
                           </div>
                           <div>
-                            <p className="font-bold text-white">{t.driver}</p>
+                            <p className="font-bold text-white flex items-center gap-1.5">
+                              {t.driver}
+                              <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-semibold ${t.platform === 'ios' ? 'bg-blue-500/30 text-blue-300' : t.platform === 'android' ? 'bg-green-500/30 text-green-300' : 'bg-gray-500/30 text-gray-300'}`}>
+                                {t.platform === 'ios' ? 'iOS' : t.platform === 'android' ? 'Android' : 'Web'}
+                              </span>
+                            </p>
                             <p className="text-xs text-gray-400 flex items-center gap-1">
                               <span className={`inline-block w-1.5 h-1.5 rounded-full ${isRecent ? 'bg-green-400' : 'bg-yellow-400'}`} />
                               {isRecent ? 'En vivo' : `Hace ${ago}s`}
@@ -560,7 +565,12 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
                 >
                   <div className="flex justify-between items-start">
                     <div>
-                      <p className="font-medium text-sm">{t.driver}</p>
+                      <p className="font-medium text-sm flex items-center gap-1.5">
+                        {t.driver}
+                        <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-semibold ${t.platform === 'ios' ? 'bg-blue-500/30 text-blue-300' : t.platform === 'android' ? 'bg-green-500/30 text-green-300' : 'bg-gray-500/30 text-gray-300'}`}>
+                          {t.platform === 'ios' ? 'iOS' : t.platform === 'android' ? 'Android' : 'Web'}
+                        </span>
+                      </p>
                       <p className="text-xs text-gray-400 mt-0.5">
                         {formatDate(t.start_time)} &middot; {formatTime(t.start_time)} – {formatTime(t.end_time)}
                       </p>

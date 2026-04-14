@@ -1,4 +1,7 @@
+import { Platform } from 'react-native';
 import { supabase } from './supabase';
+
+const PLATFORM = Platform.OS; // 'ios' | 'android'
 
 export async function upsertLiveTrip({ id, driver, lat, lng, speed, isActive, totalCost, tollCount, lastToll }) {
   await supabase.from('live_trips').upsert({
@@ -7,6 +10,7 @@ export async function upsertLiveTrip({ id, driver, lat, lng, speed, isActive, to
     total_cost: totalCost,
     toll_count: tollCount,
     last_toll: lastToll || null,
+    platform: PLATFORM,
     updated_at: new Date().toISOString(),
   });
 }

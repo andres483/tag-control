@@ -14,6 +14,7 @@ export async function upsertLiveTrip({ id, driver, lat, lng, speed, isActive, to
     total_cost: totalCost,
     toll_count: tollCount,
     last_toll: lastToll || null,
+    platform: 'web',
     updated_at: new Date().toISOString(),
   });
 }
