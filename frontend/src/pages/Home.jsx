@@ -7,6 +7,7 @@ import { playTollSound, initAudio, startBackgroundKeepAlive, stopBackgroundKeepA
 import { upsertLiveTrip, insertLiveCrossing, endLiveTrip, insertPosition, cleanupOldPositions, closeOrphanedTrips } from '../lib/liveTracking';
 import { inferMissingTolls, inferPostTrip } from '../lib/inference';
 import { supabase } from '../lib/supabase';
+import { requestNotificationPermission, startBackgroundService, stopBackgroundService, updateBackgroundNotification, startNotificationUpdates, stopNotificationUpdates } from '../lib/backgroundService';
 import TollChip from '../components/TollChip';
 import { useUser } from '../App';
 
@@ -75,6 +76,15 @@ export default function Home() {
           sendToSupabase(inf);
         }
       }
+
+      // Actualizar notificación Android con nuevo estado
+      const updatedCrossings = [...allCrossings, ...inferred.filter(inf => !allCrossings.some(c => (c.toll?.id || c.tollId) === inf.toll.id))];
+      const newTotal = updatedCrossings.reduce((sum, c) => sum + getTarifa(c.toll, new Date(c.timestamp)), 0);
+      updateBackgroundNotification({
+        tollCount: updatedCrossings.length,
+        totalCost: newTotal,
+        lastToll: crossing.toll.nombre,
+      });
     },
     [trip.isActive, trip.addCrossing, trip.crossings]
   );
@@ -118,6 +128,7 @@ export default function Home() {
         if ((Date.now() - stoppedSinceRef.current) / 60000 >= 15) {
           gps.stopTracking();
           stopBackgroundKeepAlive();
+          stopBackgroundService();
           trip.endTrip();
           if (tripIdRef.current) {
             endLiveTrip(tripIdRef.current).catch(() => {});
@@ -160,10 +171,11 @@ export default function Home() {
     };
   }, [trip.isActive]);
 
-  const handleToggleTrip = () => {
+  const handleToggleTrip = async () => {
     if (trip.isActive) {
       gps.stopTracking();
       stopBackgroundKeepAlive();
+      stopBackgroundService();
 
       // Inferencia post-viaje: enviar peajes inferidos a Supabase antes de cerrar
       if (tripIdRef.current && trip.crossings.length > 0) {
@@ -191,6 +203,12 @@ export default function Home() {
       tripIdRef.current = id;
       initAudio();
       startBackgroundKeepAlive();
+
+      // Android: pedir permiso de notificaciones y mostrar notificación persistente
+      await requestNotificationPermission();
+      startBackgroundService();
+      startNotificationUpdates(() => tripStateRef.current);
+
       cleanupOldPositions().catch(() => {});
       closeOrphanedTrips(user.name, id).catch(() => {});
       trip.startTrip(user.name);
@@ -198,12 +216,15 @@ export default function Home() {
     }
   };
 
-  const handleResumeTrip = () => {
+  const handleResumeTrip = async () => {
     if (!tripIdRef.current) {
       tripIdRef.current = `trip-${user.name}-${Date.now()}`;
     }
     initAudio();
     startBackgroundKeepAlive();
+    await requestNotificationPermission();
+    startBackgroundService();
+    startNotificationUpdates(() => tripStateRef.current);
     trip.resumeTrip();
     gps.startTracking();
   };

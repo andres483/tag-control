@@ -2,16 +2,10 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 import './index.css';
+import { registerServiceWorker } from './lib/backgroundService';
 
-// Limpiar service worker viejo
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then((registrations) => {
-    for (const reg of registrations) reg.unregister();
-  });
-  caches.keys().then((keys) => {
-    for (const key of keys) caches.delete(key);
-  });
-}
+// Registrar Service Worker (notificaciones persistentes para Android background)
+registerServiceWorker();
 
 // Auto-refresh: chequear nueva versión cada 2 minutos
 // Compara el HTML para detectar nuevos bundles (Vite genera hashes únicos)
