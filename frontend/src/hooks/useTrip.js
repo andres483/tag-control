@@ -3,6 +3,7 @@ import { getTarifa } from '../lib/pricing';
 import { saveTrip } from '../lib/storage';
 import { supabase } from '../lib/supabase';
 import { inferPostTrip } from '../lib/inference';
+import { reconstructTrip, mergeCrossings } from '../lib/reconstruction';
 
 export function useTrip() {
   const [isActive, setIsActive] = useState(false);
@@ -22,7 +23,7 @@ export function useTrip() {
     setDriver(driverName || null);
   }, []);
 
-  const endTrip = useCallback(() => {
+  const endTrip = useCallback((liveTripId) => {
     const prev = crossingsRef.current;
     if (prev.length > 0) {
       // Inferencia post-viaje: rellenar peajes faltantes entre los detectados
@@ -31,8 +32,10 @@ export function useTrip() {
 
       const totalCost = allCrossings.reduce((sum, c) => sum + getTarifa(c.toll, new Date(c.timestamp)), 0);
       const routes = [...new Set(allCrossings.map((c) => c.toll.ruta))];
+      // Usar el liveTripId para vincular con posiciones GPS en Supabase
+      const tripId = liveTripId || Date.now().toString();
       const tripData = {
-        id: Date.now().toString(),
+        id: tripId,
         driver: driver || 'Sin nombre',
         startTime: startTime || allCrossings[0].timestamp,
         endTime: Date.now(),
@@ -52,7 +55,7 @@ export function useTrip() {
       // Guardar local
       saveTrip(tripData);
 
-      // Guardar en Supabase
+      // Guardar en Supabase, luego reconstruir desde GPS positions
       supabase.from('trips').insert({
         id: tripData.id,
         driver: tripData.driver,
@@ -63,8 +66,66 @@ export function useTrip() {
         routes: tripData.routes,
         crossings: tripData.crossings,
       }).then(({ error }) => {
-        if (error) console.warn('Supabase save error:', error.message);
+        if (error) {
+          console.warn('Supabase save error:', error.message);
+          return;
+        }
+        // Safety net: reconstruir desde posiciones GPS para encontrar peajes perdidos
+        reconstructTrip(tripId, allCrossings).then((result) => {
+          if (!result || result.newTolls === 0) return;
+          // Actualizar trip con peajes reconstruidos
+          const merged = mergeCrossings(allCrossings, result.crossings.filter(c => c.reconstructed));
+          const newCost = merged.reduce((sum, c) => sum + getTarifa(c.toll, new Date(c.timestamp)), 0);
+          const newRoutes = [...new Set(merged.map(c => c.toll.ruta))];
+          supabase.from('trips').update({
+            crossings: merged.map(c => ({
+              tollId: c.toll.id,
+              tollNombre: c.toll.nombre,
+              tollRuta: c.toll.ruta,
+              tarifa: getTarifa(c.toll, new Date(c.timestamp)),
+              timestamp: c.timestamp,
+              inferred: c.inferred || c.reconstructed || false,
+            })),
+            total_cost: newCost,
+            toll_count: merged.length,
+            routes: newRoutes,
+          }).eq('id', tripId).then(() => {});
+        }).catch(() => {});
       });
+    } else if (liveTripId) {
+      // No se detectaron peajes en real-time, pero hay posiciones GPS
+      // Intentar reconstruir el viaje completo desde posiciones
+      reconstructTrip(liveTripId, []).then((result) => {
+        if (!result || result.tollCount === 0) return;
+        const tripData = {
+          id: liveTripId,
+          driver: driver || 'Sin nombre',
+          startTime: startTime || Date.now(),
+          endTime: Date.now(),
+          crossings: result.crossings.map(c => ({
+            tollId: c.toll.id,
+            tollNombre: c.toll.nombre,
+            tollRuta: c.toll.ruta,
+            tarifa: getTarifa(c.toll, new Date(c.timestamp)),
+            timestamp: c.timestamp,
+            inferred: true,
+          })),
+          totalCost: result.totalCost,
+          tollCount: result.tollCount,
+          routes: [...new Set(result.crossings.map(c => c.toll.ruta))],
+        };
+        saveTrip(tripData);
+        supabase.from('trips').insert({
+          id: tripData.id,
+          driver: tripData.driver,
+          start_time: new Date(tripData.startTime).toISOString(),
+          end_time: new Date(tripData.endTime).toISOString(),
+          total_cost: tripData.totalCost,
+          toll_count: tripData.tollCount,
+          routes: tripData.routes,
+          crossings: tripData.crossings,
+        }).then(() => {});
+      }).catch(() => {});
     }
     setIsActive(false);
     setCrossings([]);

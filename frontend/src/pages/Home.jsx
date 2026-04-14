@@ -130,9 +130,10 @@ export default function Home() {
           gps.stopTracking();
           stopBackgroundKeepAlive();
           stopBackgroundService();
-          trip.endTrip();
-          if (tripIdRef.current) {
-            endLiveTrip(tripIdRef.current).catch(() => {});
+          const autoCloseId = tripIdRef.current;
+          trip.endTrip(autoCloseId);
+          if (autoCloseId) {
+            endLiveTrip(autoCloseId).catch(() => {});
             tripIdRef.current = null;
           }
           stoppedSinceRef.current = null;
@@ -194,9 +195,10 @@ export default function Home() {
         }
       }
 
-      trip.endTrip();
-      if (tripIdRef.current) {
-        endLiveTrip(tripIdRef.current).catch(() => {});
+      const currentTripId = tripIdRef.current;
+      trip.endTrip(currentTripId);
+      if (currentTripId) {
+        endLiveTrip(currentTripId).catch(() => {});
         tripIdRef.current = null;
       }
     } else {

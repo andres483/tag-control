@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { formatCLP, formatTime, formatDate } from '../lib/format';
+import { reconstructAllTrips, reconstructAndUpdateTrip } from '../lib/reconstruction';
 
 const ADMIN_PIN = '2026';
 
@@ -65,6 +66,43 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
   const [expandedLiveTrip, setExpandedLiveTrip] = useState(null);
   const [users, setUsers] = useState([]);
   const [tripCrossings, setTripCrossings] = useState([]);
+  const [reconstructing, setReconstructing] = useState(false);
+  const [reconstructResults, setReconstructResults] = useState(null);
+
+  const handleReconstructAll = async () => {
+    setReconstructing(true);
+    setReconstructResults(null);
+    try {
+      const results = await reconstructAllTrips();
+      setReconstructResults(results);
+      if (results.length > 0) loadData(); // Refrescar datos
+    } catch (err) {
+      setReconstructResults([{ error: err.message }]);
+    }
+    setReconstructing(false);
+  };
+
+  const handleReconstructTrip = async (tripId) => {
+    setReconstructing(true);
+    try {
+      const result = await reconstructAndUpdateTrip(tripId);
+      if (result && result.newTolls > 0) {
+        setReconstructResults([{
+          tripId,
+          originalTolls: result.tollCount - result.newTolls,
+          newTolls: result.newTolls,
+          totalTolls: result.tollCount,
+          newCost: result.totalCost,
+        }]);
+        loadData();
+      } else {
+        setReconstructResults([{ tripId, newTolls: 0 }]);
+      }
+    } catch (err) {
+      setReconstructResults([{ error: err.message }]);
+    }
+    setReconstructing(false);
+  };
 
   const toggleTheme = () => {
     const next = !dark;
@@ -473,6 +511,39 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
         {/* TAB: Viajes (completados en Supabase) */}
         {tab === 'trips' && (
           <div className="flex flex-col gap-2">
+            {/* Reconstrucción desde GPS */}
+            <div className="bg-white/5 rounded-xl p-4 mb-2">
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="text-sm font-medium">Reconstruir peajes</p>
+                  <p className="text-[11px] text-gray-400">Analiza posiciones GPS para encontrar peajes perdidos</p>
+                </div>
+                <button
+                  onClick={handleReconstructAll}
+                  disabled={reconstructing}
+                  className="px-4 py-2 bg-primary text-white rounded-lg text-xs font-semibold disabled:opacity-50"
+                >
+                  {reconstructing ? 'Analizando...' : 'Reconstruir todos'}
+                </button>
+              </div>
+              {reconstructResults && (
+                <div className="mt-3 pt-3 border-t border-white/10">
+                  {reconstructResults.length === 0 ? (
+                    <p className="text-xs text-gray-400">Todos los viajes están completos</p>
+                  ) : reconstructResults[0]?.error ? (
+                    <p className="text-xs text-red-400">Error: {reconstructResults[0].error}</p>
+                  ) : (
+                    reconstructResults.map((r, i) => (
+                      <div key={i} className="flex justify-between text-xs py-1">
+                        <span>{r.tripId?.slice(0, 25)}...</span>
+                        <span className="text-green-400">+{r.newTolls} peajes</span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+
             {completedTrips.length === 0 && (
               <p className="text-center text-gray-400 text-sm py-4">
                 Los viajes aparecerán aquí cuando alguien presione "Detener viaje" (versión nueva)
@@ -502,17 +573,25 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
                       <p className="text-xs text-gray-400">{t.toll_count || 0} peajes</p>
                     </div>
                   </div>
-                  {isOpen && cx.length > 0 && (
+                  {isOpen && (
                     <div className="mt-3 flex flex-col gap-1.5">
                       {cx.map((c, i) => (
                         <div key={i} className="flex justify-between text-xs bg-white/5 rounded-lg px-3 py-2">
                           <span>
                             {c.tollNombre} <span className="text-gray-400">({c.tollRuta})</span>
+                            {c.inferred && <span className="text-yellow-400 ml-1">(GPS)</span>}
                             <span className="text-gray-400 ml-1">{formatTime(c.timestamp)}</span>
                           </span>
                           <span className="text-primary font-medium">{formatCLP(c.tarifa)}</span>
                         </div>
                       ))}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleReconstructTrip(t.id); }}
+                        disabled={reconstructing}
+                        className="mt-1 text-[11px] text-primary font-medium py-1.5 bg-primary/10 rounded-lg disabled:opacity-50"
+                      >
+                        {reconstructing ? 'Reconstruyendo...' : 'Reconstruir desde GPS'}
+                      </button>
                     </div>
                   )}
                 </button>
