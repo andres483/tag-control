@@ -1,0 +1,59 @@
+{
+  "expo": {
+    "name": "TAGcontrol",
+    "slug": "tagcontrol",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "scheme": "tagcontrol",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0F6E56"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "co.blooming.tagcontrol",
+      "infoPlist": {
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "TAGcontrol necesita tu ubicación para detectar peajes automáticamente mientras conduces, incluso en segundo plano.",
+        "NSLocationWhenInUseUsageDescription": "TAGcontrol necesita tu ubicación para detectar peajes mientras conduces.",
+        "NSLocationAlwaysUsageDescription": "TAGcontrol necesita acceso permanente a tu ubicación para detectar peajes en segundo plano.",
+        "UIBackgroundModes": ["location", "fetch"]
+      }
+    },
+    "android": {
+      "package": "co.blooming.tagcontrol",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0F6E56"
+      },
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE",
+        "FOREGROUND_SERVICE_LOCATION"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "TAGcontrol necesita tu ubicación para detectar peajes automáticamente mientras conduces.",
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "sounds": []
+        }
+      ]
+    ]
+  }
+}
