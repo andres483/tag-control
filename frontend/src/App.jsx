@@ -1,10 +1,11 @@
-import { Component, createContext, useContext } from 'react';
+import { Component, createContext, useContext, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, NavLink, useLocation } from 'react-router-dom';
 import Home from './pages/Home';
 import PlanRoute from './pages/PlanRoute';
 import History from './pages/History';
-import Admin from './pages/Admin';
 import AuthGate from './components/AuthGate';
+
+const Admin = lazy(() => import('./pages/Admin'));
 
 export const UserContext = createContext(null);
 export function useUser() { return useContext(UserContext); }
@@ -124,7 +125,13 @@ function AppShell({ user, logout }) {
 
 function RouterRoot() {
   const location = useLocation();
-  if (location.pathname === '/admin') return <Admin />;
+  if (location.pathname === '/admin') {
+    return (
+      <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#111]"><div className="w-8 h-8 border-4 border-white/20 border-t-primary rounded-full animate-spin" /></div>}>
+        <Admin />
+      </Suspense>
+    );
+  }
 
   return (
     <AuthGate>

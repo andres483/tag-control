@@ -1,8 +1,39 @@
-import { formatCLP, formatTime } from '../../lib/format';
+import { formatCLP, formatDate, formatTime } from '../../lib/format';
 
-export default function AdminData({ stats, allCrossings, allTrips }) {
+export default function AdminData({ stats, allCrossings, allTrips, completedTrips = [], onReconstructTrip, reconstructing }) {
+  // Trips at risk: closed with 0 tolls (likely detection failure) OR with positions but missing tolls
+  const atRisk = completedTrips.filter(t => (t.toll_count || 0) === 0);
+
   return (
     <div className="flex flex-col gap-4">
+      {atRisk.length > 0 && (
+        <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-3">
+          <div className="flex justify-between items-center mb-2">
+            <p className="text-xs font-semibold text-yellow-300">⚠ Viajes en riesgo ({atRisk.length})</p>
+            <span className="text-[10px] text-yellow-400/70">0 peajes detectados — posible falla</span>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            {atRisk.slice(0, 10).map(t => (
+              <div key={t.id} className="flex items-center justify-between text-xs bg-white/5 rounded-lg px-3 py-2">
+                <div>
+                  <span className="font-medium">{t.driver}</span>
+                  <span className="text-gray-400 ml-2">{formatDate(t.start_time)} {formatTime(t.start_time)}</span>
+                </div>
+                {onReconstructTrip && (
+                  <button
+                    onClick={() => onReconstructTrip(t.id)}
+                    disabled={reconstructing}
+                    className="text-[10px] text-yellow-300 font-medium px-2 py-1 bg-yellow-500/20 rounded disabled:opacity-50"
+                  >
+                    Reconstruir
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div>
         <p className="text-xs text-gray-400 mb-2 font-medium">Usuarios registrados</p>
         <div className="flex flex-wrap gap-2">

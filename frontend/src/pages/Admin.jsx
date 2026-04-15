@@ -432,7 +432,14 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
         )}
 
         {tab === 'data' && (
-          <AdminData stats={stats} allCrossings={allCrossings} allTrips={allTrips} />
+          <AdminData
+            stats={stats}
+            allCrossings={allCrossings}
+            allTrips={allTrips}
+            completedTrips={completedTrips}
+            onReconstructTrip={handleReconstructTrip}
+            reconstructing={reconstructing}
+          />
         )}
 
         <p className="text-center text-[11px] text-gray-600 pt-6 pb-4">
