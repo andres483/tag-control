@@ -17,8 +17,22 @@ One-off: audits all tolls vs a given driver's GPS trajectory. Prints closest-app
 
 Use when a user reports missed tolls. Needs positions still in the 24h cache.
 
+## `gps-calibration-agent.mjs` ⭐
+**GPS Calibration Agent** — analiza todos los viajes recientes con posiciones GPS y propone calibraciones para `tolls.json` (coordenadas y/o radio de detección).
+
+```sh
+node scripts/gps-calibration-agent.mjs              # dry run, solo reporte
+node scripts/gps-calibration-agent.mjs --days=7     # ampliar ventana (default: 3 días)
+node scripts/gps-calibration-agent.mjs --apply      # actualiza tolls.json (frontend + app)
+node scripts/gps-calibration-agent.mjs --apply --pr # actualiza + crea PR en GitHub
+```
+
+Criterios: ≥3 pasadas por peaje, shift de coords >15m, cambio de radio ≥25m.
+Shifts >200m se marcan como `⚠ verificar manualmente` (probable GPS noise o túnel).
+Corre periódicamente cuando haya viajes nuevos acumulados.
+
 ## `correct-toll-coords.mjs`
-One-off: scans all trips matching a driver pattern and proposes coordinate corrections (median foot-of-perpendicular across all passes). Works best with 3+ passes per toll. Edit driver filter near the top.
+One-off legacy: hardcodeado a Francisco + 3 peajes específicos. Reemplazado por `gps-calibration-agent.mjs`.
 
 ## `fix-francisco-trip.mjs`
 One-off: reconstructs crossings from a live_trip's GPS positions and inserts a `trips` row. Created when a user's real-time detection failed (0 tolls) but positions exist. Dry-runs by default; pass `--commit` to insert.
