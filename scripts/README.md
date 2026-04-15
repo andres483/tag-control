@@ -37,6 +37,42 @@ One-off legacy: hardcodeado a Francisco + 3 peajes específicos. Reemplazado por
 ## `fix-francisco-trip.mjs`
 One-off: reconstructs crossings from a live_trip's GPS positions and inserts a `trips` row. Created when a user's real-time detection failed (0 tolls) but positions exist. Dry-runs by default; pass `--commit` to insert.
 
+## `code-review-agent.mjs` ⭐
+**Code Review Agent** — verifica calidad antes de commitear: drift shared files, `.catch()` vacíos, queries sin `.limit()`, keys hardcodeadas.
+
+```sh
+node scripts/code-review-agent.mjs              # revisa todo el proyecto
+node scripts/code-review-agent.mjs --staged     # solo archivos en git staging
+node scripts/code-review-agent.mjs --strict     # exit 1 si hay errores (para pre-commit hook)
+```
+
+Para instalar como pre-commit hook:
+```sh
+echo '#!/bin/sh\nnode scripts/code-review-agent.mjs --staged --strict' > .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+```
+
+## `release-agent.mjs` ⭐
+**Release Agent** — lanza EAS Build (Android preview APK), espera resultado, y genera mensaje WhatsApp con link de descarga.
+
+```sh
+node scripts/release-agent.mjs                  # build Android + espera
+node scripts/release-agent.mjs --platform=ios   # build iOS
+node scripts/release-agent.mjs --no-wait        # lanza y sale sin esperar
+node scripts/release-agent.mjs --dry-run        # muestra plan sin construir
+```
+
+## `analytics-agent.mjs` ⭐
+**Analytics Agent** — genera resumen diario de actividad: usuarios activos, viajes, CLP total, anomalías de detección.
+
+```sh
+node scripts/analytics-agent.mjs               # último día
+node scripts/analytics-agent.mjs --days=7      # última semana
+node scripts/analytics-agent.mjs --days=30     # último mes
+node scripts/analytics-agent.mjs --format=whatsapp  # mensaje listo para pegar
+```
+
+Corre periódicamente (cron 08:00 Santiago) o cuando necesites un resumen ejecutivo.
+
 ## Conventions
 - Read-only by default; writes require `--commit` or `--fix`.
 - Credentials come from memory (`reference_supabase_access.md`), not env vars — anon key only, no service role.

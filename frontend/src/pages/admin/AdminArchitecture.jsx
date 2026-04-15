@@ -146,47 +146,47 @@ const AGENTS = [
   {
     emoji: '🔍',
     name: 'QA Agent',
-    status: 'planned',
-    trigger: 'Supabase RT · cada 10 min',
-    detail: 'Viajes 0 peajes · live_trips >2h · positions huérfanas',
+    status: 'active',
+    trigger: 'loadData() · cada 10 min',
+    detail: 'Viajes 0 peajes · live_trips >2h · tasa falla >50% por usuario',
     output: '⚠ Alerta en Admin',
-    outputDetail: '"Viajes en riesgo"',
+    outputDetail: 'Badge en tab DB + cards con severidad',
   },
   {
     emoji: '📍',
     name: 'GPS Calibration',
-    status: 'planned',
-    trigger: 'Nuevo viaje completado',
-    detail: 'Foot-of-perpendicular por peaje · ≥3 pasadas → propone radio',
+    status: 'active',
+    trigger: 'Manual · node scripts/',
+    detail: 'Foot-of-perpendicular por peaje · ≥3 pasadas → propone radio y coords',
     output: '🔀 PR automático',
     outputDetail: 'Coordenadas calibradas en tolls.json',
   },
   {
     emoji: '🛡',
     name: 'Code Review',
-    status: 'planned',
-    trigger: 'Pre-commit · PR creation',
-    detail: 'Drift frontend↔app · .catch() faltantes · queries sin límite',
+    status: 'active',
+    trigger: 'Pre-commit hook · manual',
+    detail: 'Drift frontend↔app · .catch() vacíos · queries sin .limit()',
     output: '🚫 Bloquea o ✅ aprueba',
-    outputDetail: 'Comenta en PR si hay issues',
+    outputDetail: '--strict exit 1 si hay errores críticos',
   },
   {
     emoji: '📦',
     name: 'Release Agent',
-    status: 'planned',
-    trigger: 'Merge a main',
-    detail: 'eas build --profile preview · espera APK listo',
+    status: 'active',
+    trigger: 'Manual · merge a main',
+    detail: 'eas build --profile preview · polling hasta APK listo',
     output: '📲 APK distribuido',
-    outputDetail: 'Link por WhatsApp al grupo',
+    outputDetail: 'Link descargable + mensaje WhatsApp listo',
   },
   {
     emoji: '📊',
     name: 'Analytics Agent',
-    status: 'planned',
-    trigger: 'Cron 08:00 Santiago',
-    detail: 'Usuarios activos · CLP total · anomalías de detección',
+    status: 'active',
+    trigger: 'Manual · cron 08:00 Santiago',
+    detail: 'Viajes · CLP · anomalías por usuario · plataformas',
     output: '💬 Resumen diario',
-    outputDetail: 'WhatsApp · formato CEO',
+    outputDetail: 'Consola + formato WhatsApp CEO',
   },
 ];
 
@@ -218,7 +218,7 @@ function AgentArch({ qaResult }) {
           <div className="bg-white/5 rounded-lg p-2.5 border border-primary/25">
             <div className="flex items-center justify-between mb-0.5">
               <p className="text-[11px] font-semibold">{a.emoji} {a.name}</p>
-              <Badge label={`#${i + 1}`} color="planned" />
+              <Badge label={a.status} color={a.status} />
             </div>
           </div>
 
