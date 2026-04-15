@@ -1,38 +1,63 @@
 # TAGcontrol
 
-PWA para tracking automático de peajes en autopistas de Chile.
+PWA + App nativa para tracking automatico de peajes en autopistas de Chile.
 
 ## Stack
-React 19 + Vite + Tailwind 4 + Supabase + Google Maps API. Deploy en Vercel.
+- **PWA (frontend/):** React 19 + Vite + Tailwind 4 + Supabase. Deploy en Vercel.
+- **App nativa (app/):** React Native + Expo SDK 54 + expo-location background. Build via EAS.
+- **Backend:** Supabase (misma instancia para ambos)
+- **Admin:** Web-only en `/admin` (no va en la app nativa)
 
 ## Proyecto
-- **Dir frontend:** `frontend/`
-- **Build:** `cd frontend && npm run build`
-- **Deploy:** `git push` (Vercel auto-deploy desde main)
+- **PWA:** `cd frontend && npm run build` — deploy con `git push` (Vercel auto-deploy)
+- **App nativa:** `cd app && npx eas-cli build --platform android --profile preview`
+- **Expo project:** @andrespanthervillagran/tagcontrol (ID: adeffd89-13d6-43fa-8516-36bfa26fd206)
 
 ## Archivos clave
-- `frontend/src/hooks/useGPS.js` — GPS watchdog, detección de peajes por proximidad
-- `frontend/src/lib/inference.js` — Inferencia de peajes faltantes (túneles sin GPS)
-- `frontend/src/data/tolls.json` — 80+ peajes con coordenadas (verificadas con OpenStreetMap)
-- `frontend/src/lib/liveTracking.js` — Supabase: upsert posición, crossings, cleanup
-- `frontend/src/lib/sound.js` — Alerta de peaje + audio keep-alive para background
-- `frontend/src/lib/pricing.js` — Tarifas por horario (semana/punta/saturación)
-- `frontend/src/pages/Home.jsx` — UI principal, ciclo de viaje, auto-cierre 15min
-- `frontend/src/pages/History.jsx` — Historial de viajes (local + cloud)
-- `frontend/src/pages/Admin.jsx` — Dashboard admin (user: Andres, PIN: 2026)
+
+### Shared logic (identica en frontend/ y app/)
+- `data/tolls.json` — 80+ peajes con coordenadas
+- `lib/pricing.js` — Tarifas por horario (semana/punta/saturacion)
+- `lib/inference.js` — Inferencia de peajes faltantes (tuneles, gaps)
+- `lib/geoUtils.js` — Haversine distance, m/s a km/h
+- `lib/format.js` — Formato CLP, fecha, hora
+
+### PWA (frontend/src/)
+- `hooks/useGPS.js` — GPS watchdog, deteccion de peajes por proximidad
+- `lib/liveTracking.js` — Supabase: upsert posicion, crossings, cleanup
+- `lib/sound.js` — Alerta de peaje + audio keep-alive para background iOS
+- `lib/backgroundService.js` — Service Worker + notificaciones para Android
+- `lib/reconstruction.js` — Reconstruccion retroactiva desde posiciones GPS
+- `pages/Home.jsx` — UI principal, ciclo de viaje
+- `pages/History.jsx` — Historial de viajes
+- `pages/Admin.jsx` — Dashboard admin (user: Andres, PIN: 2026)
+
+### App nativa (app/src/)
+- `lib/locationService.js` — GPS BACKGROUND REAL (expo-location + TaskManager)
+- `lib/liveTracking.js` — Supabase sync (con campo platform: ios/android)
+- `lib/auth.js` — Login PIN + email + SecureStore
+- `components/AuthScreen.js` — Login con nombre + email + PIN
+
+### App screens (app/app/)
+- `_layout.js` — Root: auth + user context
+- `(tabs)/index.js` — Home: iniciar/detener viaje, deteccion
+- `(tabs)/history.js` — Historial de viajes
 
 ## Supabase
 - **Ref:** nttnryildsxllxqfkkvz
-- **Tablas:** `trips`, `live_trips`, `live_crossings`, `positions` (caché 24h), `users`, `budgets`
-- **Auth:** PIN-based (name + 4 dígitos)
+- **Tablas:** `trips`, `live_trips`, `live_crossings`, `positions` (cache 24h), `users`, `budgets`
+- **Columnas nuevas:** `platform` (text) en trips y live_trips — ios/android/web
+- **Auth:** PIN-based (name + 4 digitos + email)
 
-## Detección de peajes
-1. GPS `enableHighAccuracy: true`, throttle 3s
-2. Haversine distance < radio detección (150-400m según peaje)
-3. Speed >= 20 km/h + cooldown 120s entre mismo peaje
-4. Inferencia automática para gaps en túneles (zona sin GPS)
-5. Background audio keep-alive para iOS (20Hz inaudible)
-6. Auto-cierre de viaje si detenido 15 min (speed < 5 km/h)
+## Deteccion de peajes
+1. GPS `enableHighAccuracy: true` (PWA) / `BestForNavigation` (nativo)
+2. Haversine distance < radio deteccion (150-400m segun peaje)
+3. Speed >= 15 km/h + cooldown 120s entre mismo peaje
+4. Inferencia automatica para gaps en tuneles
+5. **App nativa:** GPS real en background via expo-location TaskManager
+6. **PWA:** Audio keep-alive iOS + Service Worker Android (limitado)
+7. Reconstruccion post-viaje desde posiciones GPS guardadas
+8. Auto-cierre de viaje si detenido 30 min (speed < 5 km/h)
 
 ## Coordenadas
-Verificadas con OpenStreetMap Overpass API (`highway=toll_gantry`). Si hay que agregar o corregir peajes, usar OSM como fuente de verdad.
+Verificadas con GPS real de usuarios. Si hay que agregar o corregir peajes, usar datos GPS reales como ground truth (OSM no es confiable para tuneles).

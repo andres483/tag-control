@@ -20,7 +20,8 @@
         "NSLocationAlwaysAndWhenInUseUsageDescription": "TAGcontrol necesita tu ubicación para detectar peajes automáticamente mientras conduces, incluso en segundo plano.",
         "NSLocationWhenInUseUsageDescription": "TAGcontrol necesita tu ubicación para detectar peajes mientras conduces.",
         "NSLocationAlwaysUsageDescription": "TAGcontrol necesita acceso permanente a tu ubicación para detectar peajes en segundo plano.",
-        "UIBackgroundModes": ["location", "fetch"]
+        "UIBackgroundModes": ["location", "fetch"],
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -54,6 +55,19 @@
           "sounds": []
         }
       ]
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "adeffd89-13d6-43fa-8516-36bfa26fd206"
+      }
+    },
+    "owner": "andrespanthervillagran",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/adeffd89-13d6-43fa-8516-36bfa26fd206"
+    }
   }
 }
