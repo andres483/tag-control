@@ -28,17 +28,23 @@ export default function AdminTrips({
         </div>
         {reconstructResults && (
           <div className="mt-3 pt-3 border-t border-white/10">
-            {reconstructResults.length === 0 ? (
-              <p className="text-xs text-gray-400">Todos los viajes están completos</p>
-            ) : reconstructResults[0]?.error ? (
+            {reconstructResults[0]?.error ? (
               <p className="text-xs text-red-400">Error: {reconstructResults[0].error}</p>
+            ) : reconstructResults.length === 0 ? (
+              <p className="text-xs text-gray-400">Sin posiciones GPS disponibles (expiran en 24 h)</p>
             ) : (
-              reconstructResults.map((r, i) => (
-                <div key={i} className="flex justify-between text-xs py-1">
-                  <span>{r.tripId?.slice(0, 25)}...</span>
-                  <span className="text-green-400">+{r.newTolls} peajes</span>
-                </div>
-              ))
+              <>
+                <p className="text-xs text-green-400 font-medium mb-1.5">
+                  {reconstructResults.length} {reconstructResults.length === 1 ? 'viaje actualizado' : 'viajes actualizados'} —{' '}
+                  +{reconstructResults.reduce((s, r) => s + r.newTolls, 0)} peajes recuperados
+                </p>
+                {reconstructResults.map((r, i) => (
+                  <div key={i} className="flex justify-between text-xs py-0.5 text-gray-400">
+                    <span className="truncate max-w-[180px]">{r.tripId?.replace(/^trip-/, '')}</span>
+                    <span className="text-green-400 shrink-0 ml-2">+{r.newTolls}</span>
+                  </div>
+                ))}
+              </>
             )}
           </div>
         )}
