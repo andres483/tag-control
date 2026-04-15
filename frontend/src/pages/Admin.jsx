@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { formatCLP, formatTime, formatDate } from '../lib/format';
 import { reconstructAllTrips, reconstructAndUpdateTrip } from '../lib/reconstruction';
+import { closeStaleTrips } from '../lib/liveTracking';
 
 const ADMIN_PIN = '2026';
 
@@ -119,6 +120,8 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
   const [stats, setStats] = useState(null);
 
   async function loadData() {
+    // Cierra viajes fantasma sin updates en 30 min antes de leer
+    await closeStaleTrips(30 * 60 * 1000).catch(() => {});
     const [live, all, completed, crossings, usersData] = await Promise.all([
       supabase.from('live_trips').select('*').eq('is_active', true).order('updated_at', { ascending: false }),
       supabase.from('live_trips').select('*').order('created_at', { ascending: false }).limit(50),

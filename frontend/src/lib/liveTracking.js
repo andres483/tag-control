@@ -89,6 +89,18 @@ export async function closeOrphanedTrips(driver, currentTripId) {
 }
 
 /**
+ * Cierra viajes activos que no reciben updates hace más de `maxAgeMs` ms.
+ * Safety net para cuando la app se cierra sin detener el viaje (crash, force-quit,
+ * pérdida de GPS). Sin este cleanup, quedan viajes "fantasma" en el Admin.
+ */
+export async function closeStaleTrips(maxAgeMs = 30 * 60 * 1000) {
+  const cutoff = new Date(Date.now() - maxAgeMs).toISOString();
+  await supabase.from('live_trips').update({
+    is_active: false,
+  }).eq('is_active', true).lt('updated_at', cutoff);
+}
+
+/**
  * Obtiene todos los viajes activos.
  */
 export async function getActiveTrips() {
