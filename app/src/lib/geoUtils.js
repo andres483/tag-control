@@ -1,5 +1,8 @@
+/**
+ * Calcula la distancia en metros entre dos puntos GPS usando la fórmula haversine.
+ */
 export function haversine(lat1, lon1, lat2, lon2) {
-  const R = 6371000;
+  const R = 6371000; // radio de la Tierra en metros
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLon = ((lon2 - lon1) * Math.PI) / 180;
   const a =
@@ -10,6 +13,9 @@ export function haversine(lat1, lon1, lat2, lon2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+/**
+ * Convierte m/s a km/h
+ */
 export function msToKmh(ms) {
   return ms * 3.6;
 }

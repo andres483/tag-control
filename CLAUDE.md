@@ -61,3 +61,9 @@ PWA + App nativa para tracking automatico de peajes en autopistas de Chile.
 
 ## Coordenadas
 Verificadas con GPS real de usuarios. Si hay que agregar o corregir peajes, usar datos GPS reales como ground truth (OSM no es confiable para tuneles).
+
+### Recalibración de radios
+Cuando un peaje tiene ≥3 pasadas de distintos viajes, correr `scripts/correct-toll-coords.mjs` para proponer nuevas coords (mediana del foot-of-perpendicular). Una sola pasada no justifica mover coords (sesgo de muestra); en ese caso solo subir `radio_deteccion_m` a 450m como stopgap.
+
+## Shared logic PWA↔nativa
+`tolls.json`, `geoUtils.js`, `pricing.js`, `inference.js`, `format.js` están duplicados en `frontend/src/` y `app/src/` (Metro no resuelve imports fuera de `app/`). `frontend/` es canonical. Correr `node scripts/check-shared-drift.mjs` antes de commitear cambios en estos archivos (o `--fix` para sincronizar).

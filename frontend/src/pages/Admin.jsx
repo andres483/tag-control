@@ -1,8 +1,12 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
-import { formatCLP, formatTime, formatDate } from '../lib/format';
+import { formatCLP } from '../lib/format';
 import { reconstructAllTrips, reconstructAndUpdateTrip } from '../lib/reconstruction';
 import { closeStaleTrips } from '../lib/liveTracking';
+import AdminLive from './admin/AdminLive';
+import AdminTrips from './admin/AdminTrips';
+import AdminGrowth from './admin/AdminGrowth';
+import AdminData from './admin/AdminData';
 
 const ADMIN_PIN = '2026';
 
@@ -10,15 +14,10 @@ export default function Admin() {
   const [authenticated, setAuthenticated] = useState(false);
   const [pin, setPin] = useState('');
   const [tab, setTab] = useState('live');
-  const [liveTrips, setLiveTrips] = useState([]);
-  const [allTrips, setAllTrips] = useState([]);
-  const [allCrossings, setAllCrossings] = useState([]);
-  const [selectedTrip, setSelectedTrip] = useState(null);
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markersRef = useRef([]);
 
-  // Auth
   if (!authenticated) {
     return (
       <div className="min-h-screen bg-text flex items-center justify-center p-4">
@@ -31,9 +30,7 @@ export default function Admin() {
             maxLength={4}
             value={pin}
             onChange={(e) => setPin(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && pin === ADMIN_PIN) setAuthenticated(true);
-            }}
+            onKeyDown={(e) => { if (e.key === 'Enter' && pin === ADMIN_PIN) setAuthenticated(true); }}
             className="w-full text-center text-3xl tracking-[0.5em] bg-white/5 rounded-xl px-4 py-4 text-white focus:outline-none focus:ring-2 focus:ring-primary/30"
             placeholder="****"
             autoFocus
@@ -66,9 +63,13 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
   const [liveCrossingsByTrip, setLiveCrossingsByTrip] = useState({});
   const [expandedLiveTrip, setExpandedLiveTrip] = useState(null);
   const [users, setUsers] = useState([]);
-  const [tripCrossings, setTripCrossings] = useState([]);
+  const [selectedTripId, setSelectedTripId] = useState(null);
+  const [stats, setStats] = useState(null);
   const [reconstructing, setReconstructing] = useState(false);
   const [reconstructResults, setReconstructResults] = useState(null);
+  const [growthView, setGrowthView] = useState('dia');
+  const [mapsReady, setMapsReady] = useState(!!window.google?.maps);
+  const [locations, setLocations] = useState({});
 
   const handleReconstructAll = async () => {
     setReconstructing(true);
@@ -76,7 +77,7 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
     try {
       const results = await reconstructAllTrips();
       setReconstructResults(results);
-      if (results.length > 0) loadData(); // Refrescar datos
+      if (results.length > 0) loadData();
     } catch (err) {
       setReconstructResults([{ error: err.message }]);
     }
@@ -112,15 +113,11 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
   };
 
   const bg = dark ? 'bg-[#111]' : 'bg-white';
-  const text = dark ? 'text-white' : 'text-[#212529]';
   const textSec = dark ? 'text-[#6C757D]' : 'text-[#6C757D]';
   const card = dark ? 'bg-white/5' : 'bg-[#F8F9FA]';
   const border = dark ? 'border-white/10' : 'border-[#E9ECEF]';
-  const [selectedTripId, setSelectedTripId] = useState(null);
-  const [stats, setStats] = useState(null);
 
   async function loadData() {
-    // Cierra viajes fantasma sin updates en 30 min antes de leer
     await closeStaleTrips(30 * 60 * 1000).catch(() => {});
     const [live, all, completed, crossings, usersData] = await Promise.all([
       supabase.from('live_trips').select('*').eq('is_active', true).order('updated_at', { ascending: false }),
@@ -135,26 +132,19 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
     setAllCrossings(crossings.data || []);
     setUsers(usersData.data || []);
 
-    // Crossings por viaje activo
     const cxByTrip = {};
     for (const c of (crossings.data || [])) {
       if (!cxByTrip[c.trip_id]) cxByTrip[c.trip_id] = [];
       cxByTrip[c.trip_id].push(c);
     }
-    // Ordenar cada grupo por fecha ascendente
     for (const id in cxByTrip) {
       cxByTrip[id].sort((a, b) => new Date(a.crossed_at) - new Date(b.crossed_at));
     }
     setLiveCrossingsByTrip(cxByTrip);
 
-    // Stats combinados
     const cTrips = completed.data || [];
-    const drivers = [...new Set(cTrips.map(t => t.driver))];
-    const totalCost = cTrips.reduce((s, t) => s + (t.total_cost || 0), 0);
-    const totalTolls = cTrips.reduce((s, t) => s + (t.toll_count || 0), 0);
-    // Incluir viajes activos en los totales
     const liveData = live.data || [];
-    const allCombined = [...cTrips, ...liveData.map(l => ({ driver: l.driver, total_cost: l.total_cost || 0, toll_count: l.toll_count || 0 }))];
+    const allCombined = [...cTrips, ...liveData.map(l => ({ driver: l.driver, total_cost: l.total_cost || 0, toll_count: l.toll_count || 0, platform: l.platform }))];
 
     const totalCostAll = allCombined.reduce((s, t) => s + (t.total_cost || 0), 0);
     const totalTollsAll = allCombined.reduce((s, t) => s + (t.toll_count || 0), 0);
@@ -170,10 +160,9 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
       costByDriver[t.driver] = (costByDriver[t.driver] || 0) + (t.total_cost || 0);
     }
 
-    // Platform breakdown — trips (cTrips + liveData both have platform) and users
     const normPlat = p => p === 'ios' ? 'ios' : p === 'android' ? 'android' : p === 'web' ? 'web' : 'unknown';
     const tripsByPlatform = { ios: 0, android: 0, web: 0, unknown: 0 };
-    const platformByDriver = {}; // driver -> { ios, android, web, unknown }
+    const platformByDriver = {};
     for (const t of [...cTrips, ...liveData]) {
       const p = normPlat(t.platform);
       tripsByPlatform[p]++;
@@ -217,18 +206,7 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
     return () => { clearInterval(interval); channel.unsubscribe(); };
   }, []);
 
-  // Load crossings for selected trip
-  useEffect(() => {
-    if (selectedTripId) {
-      supabase.from('live_crossings').select('*').eq('trip_id', selectedTripId).order('crossed_at', { ascending: true })
-        .then(({ data }) => setTripCrossings(data || []));
-    }
-  }, [selectedTripId, allCrossings.length]);
-
-  const [mapsReady, setMapsReady] = useState(!!window.google?.maps);
-  const [locations, setLocations] = useState({}); // { tripId: 'Cerca de Lo Prado' }
-
-  // Load Google Maps script
+  // Google Maps — script + init + markers + geocoding
   useEffect(() => {
     if (window.google?.maps) { setMapsReady(true); return; }
     const key = import.meta.env.VITE_GOOGLE_MAPS_KEY;
@@ -247,7 +225,6 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
     document.head.appendChild(script);
   }, []);
 
-  // Init map — retry until mapRef and google are ready
   useEffect(() => {
     if (!mapsReady || mapInstanceRef.current) return;
     const tryInit = () => {
@@ -264,14 +241,12 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
       });
     };
     tryInit();
-    // Retry si el ref no estaba listo
     if (!mapInstanceRef.current) {
       const retry = setTimeout(tryInit, 500);
       return () => clearTimeout(retry);
     }
   }, [mapsReady, tab]);
 
-  // Reverse geocode para ubicación aproximada
   useEffect(() => {
     if (!mapsReady || !window.google?.maps?.Geocoder) return;
     const geocoder = new google.maps.Geocoder();
@@ -290,18 +265,15 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
     }
   }, [liveTrips, mapsReady]);
 
-  // Actualizar reverse geocode cada 30s
   useEffect(() => {
     const interval = setInterval(() => setLocations({}), 30000);
     return () => clearInterval(interval);
   }, []);
 
-  // Update map markers
   useEffect(() => {
     if (!mapInstanceRef.current) return;
     markersRef.current.forEach(m => m.setMap(null));
     markersRef.current = [];
-
     for (const trip of liveTrips) {
       if (!trip.lat || !trip.lng) continue;
       const marker = new google.maps.Marker({
@@ -320,7 +292,6 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
       });
       markersRef.current.push(marker);
     }
-
     if (liveTrips.length === 1 && liveTrips[0].lat) {
       mapInstanceRef.current.panTo({ lat: liveTrips[0].lat, lng: liveTrips[0].lng });
       mapInstanceRef.current.setZoom(13);
@@ -331,12 +302,8 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
     }
   }, [liveTrips, mapsReady]);
 
-  const [growthView, setGrowthView] = useState('dia');
-
-  // Calcular datos de growth por día
   const growthData = useMemo(() => {
     const days = {};
-    // Usar hora local (no UTC) para agrupar por día
     const toKey = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     const toLabel = (d) => d.toLocaleDateString('es-CL');
     for (const u of users) {
@@ -345,7 +312,6 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
       if (!days[key]) days[key] = { date: toLabel(d), sortKey: key, newUsers: 0, trips: 0, gasto: 0, tolls: 0 };
       days[key].newUsers++;
     }
-    // Incluir tanto viajes completados como live_trips
     const allTripsForGrowth = [
       ...completedTrips.map(t => ({ time: t.start_time, cost: t.total_cost || 0, tolls: t.toll_count || 0 })),
       ...liveTrips.map(t => ({ time: t.created_at, cost: t.total_cost || 0, tolls: t.toll_count || 0 })),
@@ -361,7 +327,6 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
     return Object.values(days).sort((a, b) => a.sortKey.localeCompare(b.sortKey));
   }, [users, completedTrips, liveTrips]);
 
-  // Datos acumulados
   const cumulativeData = useMemo(() => {
     let cumUsers = 0, cumTrips = 0, cumGasto = 0, cumTolls = 0;
     return growthData.map((day, i) => {
@@ -369,7 +334,6 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
       cumTrips += day.trips;
       cumGasto += day.gasto;
       cumTolls += day.tolls;
-      // Tasa de crecimiento vs día anterior
       const prev = i > 0 ? growthData[i - 1] : null;
       const growthRate = prev && prev.gasto > 0 ? Math.round(((day.gasto - prev.gasto) / prev.gasto) * 100) : null;
       return { ...day, cumUsers, cumTrips, cumGasto, cumTolls, growthRate };
@@ -391,7 +355,6 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
       '--admin-border': dark ? 'rgba(255,255,255,0.1)' : '#E9ECEF',
       '--admin-text-sec': dark ? '#6C757D' : '#6C757D',
     }}>
-      {/* Header */}
       <div className={`${bg} border-b ${border} px-4 py-3 flex items-center justify-between sticky top-0 z-50`}>
         <span className="font-bold text-sm">Admin</span>
         <div className="flex items-center gap-2">
@@ -417,7 +380,6 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
       </div>
 
       <div className="p-4">
-        {/* Stats bar */}
         {stats && (
           <div className="grid grid-cols-4 gap-2 mb-4">
             {[
@@ -434,488 +396,45 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
           </div>
         )}
 
-        {/* TAB: En vivo — estilo Uber */}
         {tab === 'live' && (
-          <div className="flex flex-col gap-0 -mx-4 -mt-4">
-            {/* Mapa grande */}
-            <div className="relative">
-              <div ref={mapRef} className="w-full h-[50vh] bg-white/5" />
-              {!mapsReady && (
-                <div className="absolute inset-0 flex items-center justify-center bg-text/50">
-                  <div className="w-8 h-8 border-4 border-cream/20 border-t-primary rounded-full animate-spin" />
-                </div>
-              )}
-              {liveTrips.length === 0 && mapsReady && (
-                <div className="absolute inset-0 flex items-center justify-center bg-text/60">
-                  <div className="text-center">
-                    <p className="text-white font-medium">Sin viajes activos</p>
-                    <p className="text-gray-400 text-xs mt-1">Los viajes aparecerán aquí en tiempo real</p>
-                  </div>
-                </div>
-              )}
-              {/* Badge de cantidad activa */}
-              {liveTrips.length > 0 && (
-                <div className="absolute top-3 left-3 bg-text/80 backdrop-blur-sm px-3 py-1.5 rounded-full">
-                  <span className="text-xs text-white font-medium">
-                    <span className="inline-block w-2 h-2 bg-green-400 rounded-full animate-pulse mr-1.5" />
-                    {liveTrips.length} en ruta
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {/* Cards de viajes activos — overlay */}
-            <div className="px-4 -mt-6 relative z-10 flex flex-col gap-3">
-              {liveTrips.map(t => {
-                const ago = Math.round((Date.now() - new Date(t.updated_at).getTime()) / 1000);
-                const isRecent = ago < 30;
-                const isExpanded = expandedLiveTrip === t.id;
-                const tripCx = liveCrossingsByTrip[t.id] || [];
-                return (
-                  <div
-                    key={t.id}
-                    className="bg-white/5 backdrop-blur-md rounded-2xl border border-white/10 overflow-hidden"
-                  >
-                    <button
-                      onClick={() => setExpandedLiveTrip(isExpanded ? null : t.id)}
-                      className="w-full p-4 text-left"
-                    >
-                      <div className="flex justify-between items-start">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-                            <span className="text-white font-bold">{t.driver?.charAt(0)?.toUpperCase()}</span>
-                          </div>
-                          <div>
-                            <p className="font-bold text-white flex items-center gap-1.5">
-                              {t.driver}
-                              <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-semibold ${t.platform === 'ios' ? 'bg-blue-500/30 text-blue-300' : t.platform === 'android' ? 'bg-green-500/30 text-green-300' : 'bg-gray-500/30 text-gray-300'}`}>
-                                {t.platform === 'ios' ? 'iOS' : t.platform === 'android' ? 'Android' : 'Web'}
-                              </span>
-                            </p>
-                            <p className="text-xs text-gray-400 flex items-center gap-1">
-                              <span className={`inline-block w-1.5 h-1.5 rounded-full ${isRecent ? 'bg-green-400' : 'bg-yellow-400'}`} />
-                              {isRecent ? 'En vivo' : `Hace ${ago}s`}
-                              &middot; {Math.round(t.speed || 0)} km/h
-                              {locations[t.id] && <> &middot; {locations[t.id]}</>}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-2xl font-bold text-primary">{formatCLP(t.total_cost || 0)}</p>
-                          <p className="text-xs text-gray-400">{t.toll_count || 0} peajes ▾</p>
-                        </div>
-                      </div>
-                    </button>
-
-                    {/* Acordeón: peajes del viaje */}
-                    {isExpanded && (
-                      <div className="px-4 pb-4">
-                        <div className="border-t border-white/10 pt-3 flex flex-col gap-2">
-                          {tripCx.length === 0 ? (
-                            <p className="text-xs text-gray-400 text-center">Sin peajes aún</p>
-                          ) : (
-                            tripCx.map((c, i) => (
-                              <div key={c.id} className="flex items-center justify-between text-xs">
-                                <div className="flex items-center gap-2">
-                                  <span className="w-5 h-5 bg-primary/20 rounded-full flex items-center justify-center text-[10px] text-primary font-bold">{i + 1}</span>
-                                  <div>
-                                    <span className="text-white">{c.toll_nombre}</span>
-                                    <span className="text-gray-400 ml-1">{formatTime(c.crossed_at)}</span>
-                                  </div>
-                                </div>
-                                <span className="text-primary font-medium">{formatCLP(c.tarifa)}</span>
-                              </div>
-                            ))
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+          <AdminLive
+            mapRef={mapRef}
+            mapsReady={mapsReady}
+            liveTrips={liveTrips}
+            liveCrossingsByTrip={liveCrossingsByTrip}
+            expandedLiveTrip={expandedLiveTrip}
+            setExpandedLiveTrip={setExpandedLiveTrip}
+            locations={locations}
+          />
         )}
 
-        {/* TAB: Viajes (completados en Supabase) */}
         {tab === 'trips' && (
-          <div className="flex flex-col gap-2">
-            {/* Reconstrucción desde GPS */}
-            <div className="bg-white/5 rounded-xl p-4 mb-2">
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="text-sm font-medium">Reconstruir peajes</p>
-                  <p className="text-[11px] text-gray-400">Analiza posiciones GPS para encontrar peajes perdidos</p>
-                </div>
-                <button
-                  onClick={handleReconstructAll}
-                  disabled={reconstructing}
-                  className="px-4 py-2 bg-primary text-white rounded-lg text-xs font-semibold disabled:opacity-50"
-                >
-                  {reconstructing ? 'Analizando...' : 'Reconstruir todos'}
-                </button>
-              </div>
-              {reconstructResults && (
-                <div className="mt-3 pt-3 border-t border-white/10">
-                  {reconstructResults.length === 0 ? (
-                    <p className="text-xs text-gray-400">Todos los viajes están completos</p>
-                  ) : reconstructResults[0]?.error ? (
-                    <p className="text-xs text-red-400">Error: {reconstructResults[0].error}</p>
-                  ) : (
-                    reconstructResults.map((r, i) => (
-                      <div key={i} className="flex justify-between text-xs py-1">
-                        <span>{r.tripId?.slice(0, 25)}...</span>
-                        <span className="text-green-400">+{r.newTolls} peajes</span>
-                      </div>
-                    ))
-                  )}
-                </div>
-              )}
-            </div>
-
-            {completedTrips.length === 0 && (
-              <p className="text-center text-gray-400 text-sm py-4">
-                Los viajes aparecerán aquí cuando alguien presione "Detener viaje" (versión nueva)
-              </p>
-            )}
-            {completedTrips.map(t => {
-              const cx = t.crossings || [];
-              const isOpen = selectedTripId === t.id;
-              return (
-                <button
-                  key={t.id}
-                  onClick={() => setSelectedTripId(isOpen ? null : t.id)}
-                  className={`text-left rounded-xl p-4 transition-colors ${isOpen ? 'bg-primary/20' : 'bg-white/5'}`}
-                >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="font-medium text-sm flex items-center gap-1.5">
-                        {t.driver}
-                        <span className={`text-[9px] px-1.5 py-0.5 rounded-full font-semibold ${t.platform === 'ios' ? 'bg-blue-500/30 text-blue-300' : t.platform === 'android' ? 'bg-green-500/30 text-green-300' : 'bg-gray-500/30 text-gray-300'}`}>
-                          {t.platform === 'ios' ? 'iOS' : t.platform === 'android' ? 'Android' : 'Web'}
-                        </span>
-                      </p>
-                      <p className="text-xs text-gray-400 mt-0.5">
-                        {formatDate(t.start_time)} &middot; {formatTime(t.start_time)} – {formatTime(t.end_time)}
-                      </p>
-                      <p className="text-xs text-gray-400 mt-0.5">
-                        {(t.routes || []).join(' → ')}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-bold text-primary text-sm">{formatCLP(t.total_cost || 0)}</p>
-                      <p className="text-xs text-gray-400">{t.toll_count || 0} peajes</p>
-                    </div>
-                  </div>
-                  {isOpen && (
-                    <div className="mt-3 flex flex-col gap-1.5">
-                      {cx.map((c, i) => (
-                        <div key={i} className="flex justify-between text-xs bg-white/5 rounded-lg px-3 py-2">
-                          <span>
-                            {c.tollNombre} <span className="text-gray-400">({c.tollRuta})</span>
-                            {c.inferred && <span className="text-yellow-400 ml-1">(GPS)</span>}
-                            <span className="text-gray-400 ml-1">{formatTime(c.timestamp)}</span>
-                          </span>
-                          <span className="text-primary font-medium">{formatCLP(c.tarifa)}</span>
-                        </div>
-                      ))}
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleReconstructTrip(t.id); }}
-                        disabled={reconstructing}
-                        className="mt-1 text-[11px] text-primary font-medium py-1.5 bg-primary/10 rounded-lg disabled:opacity-50"
-                      >
-                        {reconstructing ? 'Reconstruyendo...' : 'Reconstruir desde GPS'}
-                      </button>
-                    </div>
-                  )}
-                </button>
-              );
-            })}
-
-          </div>
+          <AdminTrips
+            completedTrips={completedTrips}
+            selectedTripId={selectedTripId}
+            setSelectedTripId={setSelectedTripId}
+            reconstructing={reconstructing}
+            reconstructResults={reconstructResults}
+            onReconstructAll={handleReconstructAll}
+            onReconstructTrip={handleReconstructTrip}
+          />
         )}
 
-        {/* TAB: Growth — todo en una pantalla */}
         {tab === 'growth' && (
-          <div className="flex flex-col gap-3">
-            {/* Toggle diario / acumulado */}
-            <div className="flex bg-white/5 rounded-lg p-0.5">
-              {['dia', 'acumulado'].map(v => (
-                <button
-                  key={v}
-                  onClick={() => setGrowthView(v)}
-                  className={`flex-1 py-1.5 rounded-md text-[11px] font-medium transition-colors ${growthView === v ? 'bg-primary text-white' : 'text-gray-400'}`}
-                >
-                  {v === 'dia' ? 'Por día' : 'Acumulado'}
-                </button>
-              ))}
-            </div>
-
-            {/* KPIs */}
-            <div className="grid grid-cols-4 gap-2">
-              {[
-                { v: stats?.registeredUsers || 0, l: 'Usuarios' },
-                { v: stats?.totalTrips || 0, l: 'Viajes' },
-                { v: stats?.totalTolls || 0, l: 'Peajes' },
-                { v: stats?.activeTrips || 0, l: 'Activos', green: true },
-              ].map(k => (
-                <div key={k.l} className="bg-white/5 rounded-lg p-2 text-center">
-                  <p className={`text-xl font-bold ${k.green ? 'text-green-400' : ''}`}>{k.v}</p>
-                  <p className="text-[10px] text-gray-400">{k.l}</p>
-                </div>
-              ))}
-            </div>
-
-            {/* Gasto hero */}
-            <div className="bg-white/5 rounded-lg p-3 flex justify-between items-center">
-              <div>
-                <p className="text-[10px] text-gray-400">Gasto total</p>
-                <p className="text-2xl font-bold text-primary">{formatCLP(stats?.totalCost || 0)}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-[10px] text-gray-400">Prom/viaje</p>
-                <p className="text-lg font-bold">{formatCLP(stats?.avgCostPerTrip || 0)}</p>
-              </div>
-            </div>
-
-            {/* Platform breakdown */}
-            {stats && (() => {
-              const tp = stats.tripsByPlatform || { ios: 0, android: 0, web: 0, unknown: 0 };
-              const up = stats.usersByPlatform || { ios: 0, android: 0, web: 0, unknown: 0 };
-              const PLATS = [
-                { k: 'ios', label: 'iOS', color: '#3b82f6' },
-                { k: 'android', label: 'Android', color: '#22c55e' },
-                { k: 'web', label: 'Web', color: '#a855f7' },
-                { k: 'unknown', label: '?', color: '#6b7280' },
-              ];
-              const tripTotal = Object.values(tp).reduce((a, b) => a + b, 0) || 1;
-              const userTotal = Object.values(up).reduce((a, b) => a + b, 0) || 1;
-              return (
-                <div className="bg-white/5 rounded-lg p-3 space-y-3">
-                  <p className="text-[10px] text-gray-400">Plataformas</p>
-                  {[{ label: 'Viajes', data: tp, total: tripTotal }, { label: 'Usuarios', data: up, total: userTotal }].map(row => (
-                    <div key={row.label}>
-                      <div className="flex justify-between text-[11px] mb-1">
-                        <span className="text-gray-300">{row.label}</span>
-                        <span className="text-gray-500">{row.total}</span>
-                      </div>
-                      <div className="flex h-3 rounded overflow-hidden bg-white/5">
-                        {PLATS.map(p => {
-                          const val = row.data[p.k] || 0;
-                          if (!val) return null;
-                          const pct = (val / row.total) * 100;
-                          return <div key={p.k} style={{ width: `${pct}%`, background: p.color }} title={`${p.label}: ${val}`} />;
-                        })}
-                      </div>
-                      <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1.5">
-                        {PLATS.map(p => {
-                          const val = row.data[p.k] || 0;
-                          if (!val) return null;
-                          return (
-                            <div key={p.k} className="flex items-center gap-1 text-[10px]">
-                              <span style={{ width: 8, height: 8, background: p.color, borderRadius: 2, display: 'inline-block' }} />
-                              <span className="text-gray-300">{p.label}</span>
-                              <span className="text-gray-500">{val}</span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              );
-            })()}
-
-            {/* 3 gráficos */}
-            {growthData.length > 0 && (() => {
-              const isCum = growthView === 'acumulado';
-              const src = isCum ? cumulativeData : growthData;
-              const charts = isCum
-                ? [{ key: 'cumUsers', label: 'Usuarios', color: '#22c55e' }, { key: 'cumTrips', label: 'Viajes', color: '#3b82f6' }, { key: 'cumGasto', label: 'Gasto', color: '#2D6A4F' }]
-                : [{ key: 'newUsers', label: '+Usuarios', color: '#22c55e' }, { key: 'trips', label: 'Viajes', color: '#3b82f6' }, { key: 'gasto', label: 'Gasto', color: '#2D6A4F' }];
-              const sliced = src.slice(-7);
-              return (
-                <div className="grid grid-cols-3 gap-2">
-                  {charts.map(chart => {
-                    const max = Math.max(...sliced.map(d => d[chart.key] || 0), 1);
-                    const latest = sliced[sliced.length - 1]?.[chart.key] || 0;
-                    return (
-                      <div key={chart.key} className="bg-white/5 rounded-lg p-2">
-                        <p className="text-[11px] text-gray-400">{chart.label}</p>
-                        <p className="text-[13px] font-bold" style={{ color: chart.color }}>
-                          {chart.key.includes('asto') ? formatCLP(latest) : latest}
-                        </p>
-                        <div style={{ position: 'relative', height: 60, marginTop: 4 }}>
-                          {sliced.map((day, idx) => {
-                            const val = day[chart.key] || 0;
-                            const hPx = Math.max(Math.round((val / max) * 46), 2);
-                            const barWidth = 100 / sliced.length;
-                            return (
-                              <div key={day.date} style={{
-                                position: 'absolute',
-                                bottom: 0,
-                                left: `${idx * barWidth}%`,
-                                width: `${barWidth - 1}%`,
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                              }}>
-                                {val > 0 && (
-                                  <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.35)', marginBottom: 2 }}>
-                                    {chart.key.includes('asto') ? `${Math.round(val/1000)}k` : val}
-                                  </span>
-                                )}
-                                <div style={{ width: '100%', height: hPx, background: chart.color, borderRadius: 2 }} />
-                              </div>
-                            );
-                          })}
-                        </div>
-                        <div className="flex justify-between mt-0.5">
-                          <span className="text-[10px] text-gray-400">{sliced[0]?.date?.split('/').slice(0,2).join('/')}</span>
-                          <span className="text-[10px] text-gray-400">hoy</span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              );
-            })()}
-
-            {/* Tabla */}
-            <div className="bg-white/5 rounded-lg p-3">
-              <p className="text-[10px] text-gray-400 mb-2">{growthView === 'acumulado' ? 'Acumulado' : 'Por día'}</p>
-              <div className="grid grid-cols-5 gap-0 text-[11px] text-gray-400 border-b border-white/10 pb-1 mb-1 font-medium">
-                <span>Día</span><span className="text-center">Users</span><span className="text-center">Viajes</span><span className="text-center">Peajes</span><span className="text-right">Gasto</span>
-              </div>
-              {(() => {
-                const src = growthView === 'acumulado' ? cumulativeData : growthData;
-                if (src.length === 0) return <p className="text-gray-400 text-xs text-center py-2">Sin datos</p>;
-
-                function pct(curr, prev) {
-                  if (!prev || prev === 0) return null;
-                  return Math.round(((curr - prev) / prev) * 100);
-                }
-                function PctBadge({ rate }) {
-                  if (rate === null) return null;
-                  const color = rate > 0 ? 'text-green-400' : rate < 0 ? 'text-red-400' : 'text-gray-400';
-                  return <span className={`${color} text-[10px] ml-0.5`}>{rate > 0 ? '+' : ''}{rate}%</span>;
-                }
-
-                return src.map((day, i) => {
-                  const isCum = growthView === 'acumulado';
-                  const u = isCum ? day.cumUsers : day.newUsers;
-                  const t = isCum ? day.cumTrips : day.trips;
-                  const tl = isCum ? day.cumTolls : day.tolls;
-                  const g = isCum ? day.cumGasto : day.gasto;
-                  const prev = i > 0 ? src[i-1] : null;
-                  const pu = prev ? (isCum ? prev.cumUsers : prev.newUsers) : 0;
-                  const pt = prev ? (isCum ? prev.cumTrips : prev.trips) : 0;
-                  const ptl = prev ? (isCum ? prev.cumTolls : prev.tolls) : 0;
-                  const pg = prev ? (isCum ? prev.cumGasto : prev.gasto) : 0;
-                  return (
-                    <div key={day.date} className="grid grid-cols-5 gap-0 text-[11px] py-1.5 border-b border-white/10">
-                      <span className="text-gray-400">{day.date}</span>
-                      <span className="text-center">
-                        {u > 0 ? (isCum ? u : <span className="text-green-400">+{u}</span>) : '—'}
-                        <PctBadge rate={pct(u, pu)} />
-                      </span>
-                      <span className="text-center">
-                        {t || '—'}
-                        <PctBadge rate={pct(t, pt)} />
-                      </span>
-                      <span className="text-center">
-                        {tl || '—'}
-                        <PctBadge rate={pct(tl, ptl)} />
-                      </span>
-                      <span className="text-right text-primary font-medium">
-                        {g > 0 ? formatCLP(g) : '—'}
-                        <PctBadge rate={pct(g, pg)} />
-                      </span>
-                    </div>
-                  );
-                });
-              })()}
-            </div>
-
-            {/* Usuarios con barras */}
-            {users.length > 0 && (
-              <div className="bg-white/5 rounded-lg p-3">
-                <div className="flex justify-between items-center mb-2">
-                  <p className="text-[10px] text-gray-400">Usuarios ({users.length})</p>
-                  {users.length >= 10 && <span className="text-[11px] bg-yellow-500/20 text-yellow-400 px-1.5 py-0.5 rounded-full">Waitlist</span>}
-                </div>
-                {users.map(u => {
-                  const cost = stats?.costByDriver?.[u.name] || 0;
-                  const trips = stats?.tripsByDriver?.[u.name] || 0;
-                  const max = Math.max(...(stats?.driverList || []).map(x => stats?.costByDriver?.[x] || 0), 1);
-                  const w = Math.max((cost / max) * 100, 4);
-                  return (
-                    <div key={u.name} className="flex items-center gap-2 mb-1.5">
-                      <span className="text-[11px] w-20 shrink-0 truncate">{u.name}</span>
-                      <div className="flex-1 bg-white/5 rounded-full h-5">
-                        <div className="bg-primary h-5 rounded-full flex items-center px-1.5" style={{ width: `${w}%`, minWidth: 36 }}>
-                          <span className="text-[10px] text-white whitespace-nowrap">{formatCLP(cost)}</span>
-                        </div>
-                      </div>
-                      <span className="text-[11px] text-gray-400 w-6 text-right">{trips}v</span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+          <AdminGrowth
+            stats={stats}
+            users={users}
+            growthData={growthData}
+            cumulativeData={cumulativeData}
+            growthView={growthView}
+            setGrowthView={setGrowthView}
+          />
         )}
 
-        {/* TAB: Datos crudos */}
         {tab === 'data' && (
-          <div className="flex flex-col gap-4">
-            <div>
-              <p className="text-xs text-gray-400 mb-2 font-medium">Usuarios registrados</p>
-              <div className="flex flex-wrap gap-2">
-                {stats?.driverList.map(d => (
-                  <span key={d} className="bg-white/5 px-3 py-1 rounded-full text-xs">{d}</span>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <p className="text-xs text-gray-400 mb-2 font-medium">Últimos 20 cruces de peajes</p>
-              <div className="bg-white/5 rounded-xl overflow-hidden">
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr className="border-b border-white/10 text-gray-400">
-                      <th className="px-3 py-2 text-left">Peaje</th>
-                      <th className="px-3 py-2 text-left">Ruta</th>
-                      <th className="px-3 py-2 text-right">Tarifa</th>
-                      <th className="px-3 py-2 text-right">Hora</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {allCrossings.slice(0, 20).map(c => (
-                      <tr key={c.id} className="border-b border-white/10">
-                        <td className="px-3 py-2">{c.toll_nombre}</td>
-                        <td className="px-3 py-2 text-gray-400">{c.toll_ruta}</td>
-                        <td className="px-3 py-2 text-right text-primary">{formatCLP(c.tarifa)}</td>
-                        <td className="px-3 py-2 text-right text-gray-400">{formatTime(c.crossed_at)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <div>
-              <p className="text-xs text-gray-400 mb-2 font-medium">Base de datos</p>
-              <div className="bg-white/5 rounded-xl p-3 text-xs text-gray-400">
-                <p>live_trips: {allTrips.length} registros</p>
-                <p>live_crossings: {allCrossings.length} registros</p>
-                <p>Supabase: nttnryildsxllxqfkkvz</p>
-              </div>
-            </div>
-          </div>
+          <AdminData stats={stats} allCrossings={allCrossings} allTrips={allTrips} />
         )}
 
-        {/* Powered by */}
         <p className="text-center text-[11px] text-gray-600 pt-6 pb-4">
           powered by <a href="https://weareblooming.co" target="_blank" rel="noopener noreferrer" className="hover:text-gray-400 transition-colors">Blooming</a>
         </p>
