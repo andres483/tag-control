@@ -6,7 +6,7 @@ import { formatCLP, formatTime } from '../../src/lib/format';
 import { getTarifa, getTarifaLabel } from '../../src/lib/pricing';
 import { inferMissingTolls, inferPostTrip } from '../../src/lib/inference';
 import { requestLocationPermissions, startTracking, stopTracking } from '../../src/lib/locationService';
-import { upsertLiveTrip, insertLiveCrossing, insertPosition, endLiveTrip, cleanupOldPositions, closeOrphanedTrips } from '../../src/lib/liveTracking';
+import { upsertLiveTrip, insertLiveCrossing, insertPosition, endLiveTrip, cleanupOldPositions, closeOrphanedTrips, flushPositionQueue } from '../../src/lib/liveTracking';
 import { supabase } from '../../src/lib/supabase';
 
 const PRIMARY = '#0F6E56';
@@ -154,7 +154,10 @@ export default function HomeScreen() {
           // siguen vivas 24h y el Admin las puede reconstruir. Tirar el trip
           // silenciosamente esconde fallas de detección (bug Francisco 2026-04-15).
           if (currentId) {
-            supabase.from('trips').insert({
+            // Flush any buffered positions before saving trip so reconstruction works
+            await flushPositionQueue().catch(() => {});
+
+            const tripRow = {
               id: currentId, driver: user.name,
               start_time: new Date(startTime || allCrossings[0]?.timestamp || Date.now()).toISOString(),
               end_time: new Date().toISOString(),
@@ -165,7 +168,15 @@ export default function HomeScreen() {
                 tarifa: getTarifa(c.toll, new Date(c.timestamp)),
                 timestamp: c.timestamp, inferred: c.inferred || false,
               })),
-            }).then(() => {});
+            };
+
+            // Retry trip insert up to 3x — losing a trip row is unacceptable
+            let saved = false;
+            for (let attempt = 0; attempt < 3 && !saved; attempt++) {
+              if (attempt > 0) await new Promise(r => setTimeout(r, 1000 * attempt));
+              const { error } = await supabase.from('trips').insert(tripRow);
+              if (!error) saved = true;
+            }
           }
 
           if (currentId) endLiveTrip(currentId).catch(() => {});

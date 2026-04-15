@@ -201,15 +201,23 @@ export async function reconstructAndUpdateTrip(tripId) {
 }
 
 /**
- * Reconstruye TODOS los viajes que tienen posiciones GPS disponibles.
- * Para usar desde Admin o como batch job.
+ * Reconstruye viajes que tienen posiciones GPS disponibles.
+ * Acotado a trips de las últimas 24 h (positions expiran en 24 h de todas formas)
+ * para evitar N queries en toda la historia.
+ *
+ * @param {Object} opts
+ * @param {number} [opts.maxAgeMs=86400000]  Solo procesar trips más recientes que esto
+ * @param {number} [opts.limit=50]           Máximo de trips a procesar por llamada
  */
-export async function reconstructAllTrips() {
-  // Buscar trips que tienen posiciones asociadas
+export async function reconstructAllTrips({ maxAgeMs = 24 * 60 * 60 * 1000, limit = 50 } = {}) {
+  const cutoff = new Date(Date.now() - maxAgeMs).toISOString();
+
   const { data: trips } = await supabase
     .from('trips')
     .select('id, crossings, total_cost, toll_count')
-    .order('created_at', { ascending: false });
+    .gte('created_at', cutoff)
+    .order('created_at', { ascending: false })
+    .limit(limit);
 
   if (!trips) return [];
 
