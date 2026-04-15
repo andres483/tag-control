@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import { formatCLP } from '../lib/format';
 import { reconstructAllTrips, reconstructAndUpdateTrip } from '../lib/reconstruction';
 import { closeStaleTrips } from '../lib/liveTracking';
+import { runQAAgent } from '../lib/qaAgent';
 import AdminLive from './admin/AdminLive';
 import AdminTrips from './admin/AdminTrips';
 import AdminGrowth from './admin/AdminGrowth';
@@ -68,6 +69,7 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
   const [stats, setStats] = useState(null);
   const [reconstructing, setReconstructing] = useState(false);
   const [reconstructResults, setReconstructResults] = useState(null);
+  const [qaResult, setQaResult] = useState(null);
   const [growthView, setGrowthView] = useState('dia');
   const [mapsReady, setMapsReady] = useState(!!window.google?.maps);
   const [locations, setLocations] = useState({});
@@ -120,6 +122,7 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
 
   async function loadData() {
     await closeStaleTrips(30 * 60 * 1000).catch(() => {});
+    runQAAgent().then(setQaResult).catch(() => {});
     const [live, all, completed, crossings, usersData] = await Promise.all([
       supabase.from('live_trips').select('*').eq('is_active', true).order('updated_at', { ascending: false }),
       supabase.from('live_trips').select('*').order('created_at', { ascending: false }).limit(50),
@@ -341,12 +344,13 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
     });
   }, [growthData]);
 
+  const qaIssues = qaResult?.findings?.length || 0;
   const tabs = [
-    { id: 'live', label: 'En vivo' },
+    { id: 'live',   label: 'En vivo' },
     { id: 'growth', label: 'Growth' },
-    { id: 'trips', label: 'Viajes' },
-    { id: 'data', label: 'DB' },
-    { id: 'arch', label: 'Arch' },
+    { id: 'trips',  label: 'Viajes' },
+    { id: 'data',   label: 'DB', badge: qaIssues },
+    { id: 'arch',   label: 'Arch' },
   ];
 
   return (
@@ -365,9 +369,14 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
               <button
                 key={t.id}
                 onClick={() => setTab(t.id)}
-                className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors ${tab === t.id ? 'bg-primary text-white' : textSec}`}
+                className={`relative px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors ${tab === t.id ? 'bg-primary text-white' : textSec}`}
               >
                 {t.label}
+                {t.badge > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[8px] font-bold rounded-full w-3.5 h-3.5 flex items-center justify-center">
+                    {t.badge}
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -442,10 +451,11 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
             onReconstructTrip={handleReconstructTrip}
             reconstructing={reconstructing}
             reconstructResults={reconstructResults}
+            qaResult={qaResult}
           />
         )}
 
-        {tab === 'arch' && <AdminArchitecture />}
+        {tab === 'arch' && <AdminArchitecture qaResult={qaResult} />}
 
         <p className="text-center text-[11px] text-gray-600 pt-6 pb-4">
           powered by <a href="https://weareblooming.co" target="_blank" rel="noopener noreferrer" className="hover:text-gray-400 transition-colors">Blooming</a>

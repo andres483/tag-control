@@ -190,7 +190,7 @@ const AGENTS = [
   },
 ];
 
-function AgentArch() {
+function AgentArch({ qaResult }) {
   return (
     <div className="flex flex-col gap-2">
 
@@ -233,6 +233,21 @@ function AgentArch() {
         </div>
       ))}
 
+      {/* QA Agent live status */}
+      {qaResult && (
+        <div className={`rounded-xl px-3 py-2 flex items-center justify-between ${qaResult.healthy ? 'bg-green-500/10 border border-green-500/20' : 'bg-red-500/10 border border-red-500/20'}`}>
+          <div className="flex items-center gap-2">
+            <span className={`w-1.5 h-1.5 rounded-full ${qaResult.healthy ? 'bg-green-400' : 'bg-red-400'}`} />
+            <span className="text-[10px] font-medium">
+              {qaResult.healthy ? '🔍 QA Agent — sin issues' : `🔍 QA Agent — ${qaResult.findings.length} issue${qaResult.findings.length > 1 ? 's' : ''} detectado${qaResult.findings.length > 1 ? 's' : ''}`}
+            </span>
+          </div>
+          <span className="text-[9px] text-gray-500">
+            {new Date(qaResult.runAt).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}
+          </span>
+        </div>
+      )}
+
       {/* Infra footer */}
       <div className="mt-2 bg-white/5 rounded-xl p-3 flex flex-wrap gap-x-5 gap-y-1">
         {[
@@ -252,14 +267,14 @@ function AgentArch() {
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export default function AdminArchitecture() {
+export default function AdminArchitecture({ qaResult }) {
   return (
     <div className="flex flex-col gap-4">
       <Section title="Sistema TAGcontrol">
         <SystemArch />
       </Section>
       <Section title="Arquitectura de agents">
-        <AgentArch />
+        <AgentArch qaResult={qaResult} />
       </Section>
     </div>
   );

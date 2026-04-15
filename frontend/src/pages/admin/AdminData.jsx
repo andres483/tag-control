@@ -1,9 +1,14 @@
 import { formatCLP, formatDate, formatTime } from '../../lib/format';
 
-export default function AdminData({ stats, allCrossings, allTrips, completedTrips = [], onReconstructTrip, reconstructing, reconstructResults }) {
+const SEVERITY = {
+  error:   { bg: 'bg-red-500/10',    border: 'border-red-500/30',    text: 'text-red-400',    dot: 'bg-red-500' },
+  warning: { bg: 'bg-yellow-500/10', border: 'border-yellow-500/30', text: 'text-yellow-400', dot: 'bg-yellow-400' },
+  info:    { bg: 'bg-blue-500/10',   border: 'border-blue-500/30',   text: 'text-blue-400',   dot: 'bg-blue-400' },
+};
+
+export default function AdminData({ stats, allCrossings, allTrips, completedTrips = [], onReconstructTrip, reconstructing, reconstructResults, qaResult }) {
   const atRisk = completedTrips.filter(t => (t.toll_count || 0) === 0);
 
-  // Map last reconstruct result by tripId for inline feedback
   const resultByTrip = {};
   if (reconstructResults) {
     for (const r of reconstructResults) {
@@ -13,6 +18,41 @@ export default function AdminData({ stats, allCrossings, allTrips, completedTrip
 
   return (
     <div className="flex flex-col gap-4">
+
+      {/* QA Agent findings */}
+      {qaResult && (
+        <div>
+          <div className="flex items-center justify-between mb-1.5">
+            <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">QA Agent</p>
+            <span className="text-[9px] text-gray-600">
+              {qaResult.healthy ? '✓ Todo ok' : `${qaResult.findings.length} issue${qaResult.findings.length > 1 ? 's' : ''}`}
+              {' · '}{new Date(qaResult.runAt).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          </div>
+          {qaResult.healthy ? (
+            <div className="bg-green-500/10 border border-green-500/20 rounded-xl px-3 py-2.5">
+              <p className="text-[11px] text-green-400 font-medium">Sistema saludable — sin anomalías detectadas</p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-1.5">
+              {qaResult.findings.map((f, i) => {
+                const s = SEVERITY[f.severity] || SEVERITY.warning;
+                return (
+                  <div key={i} className={`${s.bg} border ${s.border} rounded-xl px-3 py-2.5`}>
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${s.dot}`} />
+                      <p className={`text-[11px] font-semibold ${s.text}`}>{f.message}</p>
+                    </div>
+                    <p className="text-[10px] text-gray-500 ml-3.5">{f.detail}</p>
+                    {f.action && <p className={`text-[10px] ml-3.5 mt-0.5 font-medium ${s.text} opacity-70`}>→ {f.action}</p>}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
       {atRisk.length > 0 && (
         <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-3">
           <div className="flex justify-between items-center mb-2">
