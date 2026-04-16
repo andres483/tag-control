@@ -70,6 +70,7 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
   const [reconstructing, setReconstructing] = useState(false);
   const [reconstructResults, setReconstructResults] = useState(null);
   const [qaResult, setQaResult] = useState(null);
+  const [feedbackItems, setFeedbackItems] = useState([]);
   const [growthView, setGrowthView] = useState('dia');
   const [mapsReady, setMapsReady] = useState(!!window.google?.maps);
   const [locations, setLocations] = useState({});
@@ -123,18 +124,20 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
   async function loadData() {
     await closeStaleTrips(30 * 60 * 1000).catch(() => {});
     runQAAgent().then(setQaResult).catch(() => {});
-    const [live, all, completed, crossings, usersData] = await Promise.all([
+    const [live, all, completed, crossings, usersData, feedbackData] = await Promise.all([
       supabase.from('live_trips').select('*').eq('is_active', true).order('updated_at', { ascending: false }),
       supabase.from('live_trips').select('*').order('created_at', { ascending: false }).limit(50),
       supabase.from('trips').select('*').order('created_at', { ascending: false }).limit(50),
       supabase.from('live_crossings').select('*').order('crossed_at', { ascending: false }).limit(100),
       supabase.from('users').select('*').order('created_at', { ascending: false }),
+      supabase.from('feedback').select('*').order('created_at', { ascending: false }).limit(20),
     ]);
     setLiveTrips(live.data || []);
     setAllTrips(all.data || []);
     setCompletedTrips(completed.data || []);
     setAllCrossings(crossings.data || []);
     setUsers(usersData.data || []);
+    setFeedbackItems(feedbackData.data || []);
 
     const cxByTrip = {};
     for (const c of (crossings.data || [])) {
@@ -452,6 +455,7 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
             reconstructing={reconstructing}
             reconstructResults={reconstructResults}
             qaResult={qaResult}
+            feedbackItems={feedbackItems}
           />
         )}
 

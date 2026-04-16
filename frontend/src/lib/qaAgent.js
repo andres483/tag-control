@@ -59,29 +59,50 @@ export async function runQAAgent() {
   const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString();
   const { data: weekTrips } = await supabase
     .from('trips')
-    .select('driver, toll_count')
+    .select('driver, toll_count, platform')
     .gte('created_at', weekAgo);
 
   if (weekTrips?.length > 0) {
     const zeroByDriver = {};
     const totalByDriver = {};
+    const platformByDriver = {};
     for (const t of weekTrips) {
       totalByDriver[t.driver] = (totalByDriver[t.driver] || 0) + 1;
       if ((t.toll_count || 0) === 0) {
         zeroByDriver[t.driver] = (zeroByDriver[t.driver] || 0) + 1;
       }
+      const p = t.platform || 'web';
+      if (!platformByDriver[t.driver]) platformByDriver[t.driver] = {};
+      platformByDriver[t.driver][p] = (platformByDriver[t.driver][p] || 0) + 1;
     }
+
+    const getDominantPlatform = (driver) => {
+      const platforms = platformByDriver[driver] || {};
+      return Object.entries(platforms).sort((a, b) => b[1] - a[1])[0]?.[0] || 'web';
+    };
+
+    const ACTION_BY_PLATFORM = {
+      ios: 'iOS: Ajustes > Safari > Ubicación → Permitir mientras se usa',
+      android: 'Android: Ajustes > Permisos > Ubicación → Siempre',
+      web: 'Navegador: ícono candado → Ubicación → Permitir',
+    };
+
     const problemDrivers = Object.entries(zeroByDriver)
       .filter(([driver, zeros]) => zeros >= 2 && zeros / (totalByDriver[driver] || 1) > 0.5)
-      .map(([driver, zeros]) => `${driver} (${zeros}/${totalByDriver[driver]})`);
+      .map(([driver, zeros]) => {
+        const platform = getDominantPlatform(driver);
+        return { driver, zeros, total: totalByDriver[driver], platform };
+      });
 
     if (problemDrivers.length > 0) {
+      const platforms = [...new Set(problemDrivers.map(d => d.platform))];
+      const actionLines = platforms.map(p => ACTION_BY_PLATFORM[p] || 'Revisar permisos GPS').join(' / ');
       findings.push({
         type: 'detection_pattern',
         severity: 'warning',
         message: `Patrón de falla detectado en ${problemDrivers.length} usuario${problemDrivers.length > 1 ? 's' : ''}`,
-        detail: problemDrivers.join(' · '),
-        action: 'Revisar permisos GPS',
+        detail: problemDrivers.map(d => `${d.driver} (${d.zeros}/${d.total}) [${d.platform}]`).join(' · '),
+        action: actionLines,
         data: problemDrivers,
       });
     }

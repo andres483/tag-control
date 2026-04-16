@@ -5,6 +5,7 @@ import { getTarifaLabel, getTarifa } from '../lib/pricing';
 import { formatCLP } from '../lib/format';
 import { playTollSound, initAudio, startBackgroundKeepAlive, stopBackgroundKeepAlive } from '../lib/sound';
 import { upsertLiveTrip, insertLiveCrossing, endLiveTrip, insertPosition, cleanupOldPositions, closeOrphanedTrips } from '../lib/liveTracking';
+import { submitFeedback } from '../lib/feedback';
 import { inferMissingTolls, inferPostTrip } from '../lib/inference';
 import { supabase } from '../lib/supabase';
 import { requestNotificationPermission, startBackgroundService, stopBackgroundService, updateBackgroundNotification, startNotificationUpdates, stopNotificationUpdates } from '../lib/backgroundService';
@@ -19,6 +20,9 @@ export default function Home() {
   const [budget, setBudget] = useState(null); // { monthly_limit, spent }
   const [editingBudget, setEditingBudget] = useState(false);
   const [budgetInput, setBudgetInput] = useState('');
+  const [gpsBlocked, setGpsBlocked] = useState(false);
+  const [feedbackNote, setFeedbackNote] = useState('');
+  const [feedbackSent, setFeedbackSent] = useState(false);
 
   // Cargar meta y gasto del mes
   useEffect(() => {
@@ -91,6 +95,12 @@ export default function Home() {
 
   const gps = useGPS({ onTollCrossed: handleTollCrossed });
   const stoppedSinceRef = useRef(null);
+
+  useEffect(() => {
+    if (trip.isActive && gps.error && gps.error.includes('denegado')) {
+      setGpsBlocked(true);
+    }
+  }, [gps.error, trip.isActive]);
   const tripStateRef = useRef({ totalCost: 0, tollCount: 0, crossings: [] });
 
   // Mantener ref sincronizada con trip state (evita re-renders del effect)
@@ -233,6 +243,76 @@ export default function Home() {
   };
 
   const tarifaLabel = getTarifaLabel();
+
+  // ─── OVERLAY: GPS BLOQUEADO ───
+  if (gpsBlocked) {
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    const isAndroid = /android/i.test(navigator.userAgent);
+    const steps = isIOS
+      ? ['Abre Ajustes del iPhone', 'Busca Safari (o Chrome)', 'Toca Ubicación', 'Selecciona "Mientras se usa la app"']
+      : isAndroid
+      ? ['Abre Ajustes', 'Aplicaciones > Navegador', 'Permisos > Ubicación', 'Selecciona "Permitir todo el tiempo"']
+      : ['Toca el ícono de candado en la barra del navegador', 'Toca Ubicación', 'Selecciona "Permitir"'];
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-16 h-16 rounded-full bg-danger/10 flex items-center justify-center mb-4">
+          <svg className="w-8 h-8 text-danger" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+          </svg>
+        </div>
+        <h2 className="text-lg font-bold text-text mb-1">GPS bloqueado</h2>
+        <p className="text-sm text-text-secondary mb-6">
+          TAGcontrol necesita acceso a tu ubicación para detectar peajes. Sigue estos pasos:
+        </p>
+        <ol className="text-left w-full max-w-xs flex flex-col gap-2 mb-8">
+          {steps.map((step, i) => (
+            <li key={i} className="flex items-start gap-3">
+              <span className="w-6 h-6 rounded-full bg-primary/20 text-primary text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">{i + 1}</span>
+              <span className="text-sm text-text">{step}</span>
+            </li>
+          ))}
+        </ol>
+        <button
+          onClick={() => { setGpsBlocked(false); setFeedbackSent(false); setFeedbackNote(''); }}
+          className="w-full max-w-xs py-3 rounded-2xl font-semibold text-white bg-primary mb-4"
+        >
+          Ya lo activé — intentar de nuevo
+        </button>
+
+        {/* Diagnóstico */}
+        <div className="w-full max-w-xs border border-surface-tertiary rounded-2xl p-4 text-left">
+          <p className="text-xs font-semibold text-text-secondary mb-2">¿Sigue sin funcionar? Envía un diagnóstico</p>
+          {feedbackSent ? (
+            <p className="text-sm text-primary font-medium text-center py-1">Diagnóstico enviado. Lo revisamos pronto.</p>
+          ) : (
+            <>
+              <textarea
+                value={feedbackNote}
+                onChange={e => setFeedbackNote(e.target.value)}
+                placeholder="Describe el problema (opcional)"
+                rows={2}
+                className="w-full bg-surface rounded-xl px-3 py-2 text-sm text-text border border-surface-tertiary focus:outline-none focus:border-primary resize-none mb-2"
+              />
+              <button
+                onClick={async () => {
+                  const ok = await submitFeedback({
+                    driver: user.name,
+                    errorMessage: gps.error || 'GPS bloqueado',
+                    notes: feedbackNote,
+                  });
+                  if (ok) setFeedbackSent(true);
+                }}
+                className="w-full py-2 rounded-xl text-sm font-semibold text-primary bg-primary/10 active:bg-primary/20"
+              >
+                Enviar diagnóstico
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   // ─── PANTALLA ANTES DE INICIAR ───
   if (!trip.isActive && trip.crossings.length === 0) {

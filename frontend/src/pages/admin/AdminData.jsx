@@ -6,7 +6,10 @@ const SEVERITY = {
   info:    { bg: 'bg-blue-500/10',   border: 'border-blue-500/30',   text: 'text-blue-400',   dot: 'bg-blue-400' },
 };
 
-export default function AdminData({ stats, allCrossings, allTrips, completedTrips = [], onReconstructTrip, reconstructing, reconstructResults, qaResult }) {
+const POSITIONS_TTL_MS = 24 * 60 * 60 * 1000;
+
+export default function AdminData({ stats, allCrossings, allTrips, completedTrips = [], onReconstructTrip, reconstructing, reconstructResults, qaResult, feedbackItems = [] }) {
+  const now = Date.now();
   const atRisk = completedTrips.filter(t => (t.toll_count || 0) === 0);
 
   const resultByTrip = {};
@@ -76,6 +79,10 @@ export default function AdminData({ stats, allCrossings, allTrips, completedTrip
                       {res.newTolls > 0 ? `+${res.newTolls} peajes` : 'Sin datos GPS'}
                     </span>
                   );
+                  const canReconstruct = now - new Date(t.start_time).getTime() < POSITIONS_TTL_MS;
+                  if (!canReconstruct) return (
+                    <span className="text-[10px] text-gray-600 px-2">Posiciones expiradas</span>
+                  );
                   return (
                     <button
                       onClick={() => onReconstructTrip(t.id)}
@@ -86,6 +93,24 @@ export default function AdminData({ stats, allCrossings, allTrips, completedTrip
                     </button>
                   );
                 })()}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {feedbackItems.length > 0 && (
+        <div>
+          <p className="text-xs text-gray-400 mb-2 font-medium">Diagnósticos recibidos ({feedbackItems.length})</p>
+          <div className="flex flex-col gap-1.5">
+            {feedbackItems.map(f => (
+              <div key={f.id} className="bg-white/5 rounded-xl px-3 py-2.5 text-xs">
+                <div className="flex items-center justify-between mb-0.5">
+                  <span className="font-medium">{f.driver}</span>
+                  <span className="text-gray-500">{f.platform} · {new Date(f.created_at).toLocaleDateString('es-CL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                </div>
+                <p className="text-gray-400">{f.error_message}</p>
+                {f.notes && <p className="text-gray-300 mt-0.5 italic">"{f.notes}"</p>}
               </div>
             ))}
           </div>
