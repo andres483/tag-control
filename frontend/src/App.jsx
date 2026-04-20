@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, NavLink, useLocation } from 'react-router
 import Home from './pages/Home';
 import PlanRoute from './pages/PlanRoute';
 import History from './pages/History';
+import Privacy from './pages/Privacy';
 import AuthGate from './components/AuthGate';
 
 const Admin = lazy(() => import('./pages/Admin'));
@@ -125,6 +126,10 @@ function AppShell({ user, logout }) {
 
 function RouterRoot() {
   const location = useLocation();
+  if (location.pathname === '/privacy') {
+    return <Privacy />;
+  }
+
   if (location.pathname === '/admin') {
     return (
       <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-[#111]"><div className="w-8 h-8 border-4 border-white/20 border-t-primary rounded-full animate-spin" /></div>}>
