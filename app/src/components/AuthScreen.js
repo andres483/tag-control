@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Linking } from 'react-native';
 
 const PRIMARY = '#0F6E56';
 
@@ -19,22 +19,28 @@ export default function AuthScreen({ onLogin }) {
     setLoading(true);
     setError('');
 
-    if (needsEmail && pendingUser) {
-      // Existing user adding email
-      const ok = await onLogin(pendingUser.name, pin, email.trim());
-      if (!ok) setError('Error al guardar email');
-      setLoading(false);
-      return;
+    const timeout = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('timeout')), 12000)
+    );
+
+    try {
+      if (needsEmail && pendingUser) {
+        const ok = await Promise.race([onLogin(pendingUser.name, pin, email.trim()), timeout]);
+        if (!ok) setError('Error al guardar email');
+      } else {
+        const result = await Promise.race([onLogin(name.trim(), pin, email.trim() || undefined), timeout]);
+        if (result === 'needsEmail') {
+          setNeedsEmail(true);
+          setPendingUser({ name: name.trim() });
+          setError('');
+        } else if (!result) {
+          setError('PIN incorrecto');
+        }
+      }
+    } catch {
+      setError('Sin conexión. Verifica tu internet e intenta de nuevo.');
     }
 
-    const result = await onLogin(name.trim(), pin, email.trim() || undefined);
-    if (result === 'needsEmail') {
-      setNeedsEmail(true);
-      setPendingUser({ name: name.trim() });
-      setError('');
-    } else if (!result) {
-      setError('PIN incorrecto');
-    }
     setLoading(false);
   };
 
@@ -109,6 +115,10 @@ export default function AuthScreen({ onLogin }) {
         <Text style={s.hint}>
           {needsEmail ? 'Solo lo usamos para tu cuenta' : 'Si es tu primera vez, se crea tu cuenta'}
         </Text>
+
+        <TouchableOpacity onPress={() => Linking.openURL('https://tagcontrol.vercel.app/privacy')}>
+          <Text style={s.privacyLink}>Política de privacidad</Text>
+        </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
   );
@@ -128,4 +138,5 @@ const s = StyleSheet.create({
   buttonDisabled: { opacity: 0.5 },
   buttonText: { color: '#fff', fontWeight: '600', fontSize: 16 },
   hint: { fontSize: 12, color: '#aaa', marginTop: 12, textAlign: 'center' },
+  privacyLink: { fontSize: 11, color: '#bbb', marginTop: 16, textAlign: 'center', textDecorationLine: 'underline' },
 });

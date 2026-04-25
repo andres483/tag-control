@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, Linking } from 'react-native';
 import { useUser } from '../_layout';
 import { supabase } from '../../src/lib/supabase';
 import { formatCLP } from '../../src/lib/format';
+import { deleteAccount } from '../../src/lib/auth';
 
 const PRIMARY = '#0F6E56';
 
@@ -42,6 +43,24 @@ export default function SettingsScreen() {
       { text: 'Cancelar', style: 'cancel' },
       { text: 'Salir', style: 'destructive', onPress: logout },
     ]);
+  };
+
+  const handleDelete = () => {
+    Alert.alert(
+      'Eliminar cuenta',
+      'Se borrarán todos tus datos permanentemente. Esta acción no se puede deshacer.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Eliminar',
+          style: 'destructive',
+          onPress: async () => {
+            await deleteAccount(user.name);
+            logout();
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -95,6 +114,16 @@ export default function SettingsScreen() {
         <Text style={s.logoutText}>Cerrar sesión</Text>
       </TouchableOpacity>
 
+      {/* Delete account */}
+      <TouchableOpacity style={s.deleteButton} onPress={handleDelete}>
+        <Text style={s.deleteText}>Eliminar cuenta</Text>
+      </TouchableOpacity>
+
+      {/* Privacy policy */}
+      <TouchableOpacity onPress={() => Linking.openURL('https://tagcontrol.vercel.app/privacy')}>
+        <Text style={s.privacyLink}>Política de privacidad</Text>
+      </TouchableOpacity>
+
       <Text style={s.version}>TAGcontrol · Blooming</Text>
     </ScrollView>
   );
@@ -126,5 +155,10 @@ const s = StyleSheet.create({
   logoutButton: { borderRadius: 13, paddingVertical: 14, alignItems: 'center', borderWidth: 1, borderColor: '#f0f0f0', marginTop: 8 },
   logoutText: { fontSize: 15, color: '#e53935', fontWeight: '500' },
 
-  version: { textAlign: 'center', fontSize: 11, color: '#ccc', marginTop: 28 },
+  deleteButton: { paddingVertical: 14, alignItems: 'center', marginTop: 4 },
+  deleteText: { fontSize: 13, color: '#bbb' },
+
+  privacyLink: { textAlign: 'center', fontSize: 12, color: '#aaa', marginTop: 20, textDecorationLine: 'underline' },
+
+  version: { textAlign: 'center', fontSize: 11, color: '#ccc', marginTop: 8 },
 });

@@ -117,33 +117,32 @@ TaskManager.defineTask(BACKGROUND_LOCATION_TASK, ({ data, error }) => {
 
 /**
  * Request location permissions (foreground + background).
- * Returns true if background location is granted.
+ * Returns 'background' | 'foreground' | false.
+ * 'foreground' = tracking works but only while app is visible.
+ * false = user denied location entirely.
  */
 export async function requestLocationPermissions() {
   const { status: foreground } = await Location.requestForegroundPermissionsAsync();
   if (foreground !== 'granted') return false;
 
-  const { status: background } = await Location.requestBackgroundPermissionsAsync();
-  if (background !== 'granted') return false;
-
-  // Request notification permission alongside location — needed for toll alerts
   await Notifications.requestPermissionsAsync();
-  return true;
+
+  const { status: background } = await Location.requestBackgroundPermissionsAsync();
+  return background === 'granted' ? 'background' : 'foreground';
 }
 
 /**
- * Start tracking GPS in background.
- * onTollCrossed: callback when a toll is detected
- * onPositionUpdate: callback for each GPS position (for UI/Supabase)
+ * Start tracking GPS.
+ * background=true: tracks even when app is closed (requires Always permission).
+ * background=false: tracks only while app is visible (When In Use permission).
  */
-export async function startTracking({ onTollCrossed, onPositionUpdate }) {
+export async function startTracking({ onTollCrossed, onPositionUpdate, background = true }) {
   _onTollCrossed = onTollCrossed;
   _onPositionUpdate = onPositionUpdate;
   _cooldowns = {};
   _lastPosition = null;
   _isTracking = true;
 
-  // Start foreground location — save subscription so we can remove it on stop
   _watchSubscription = await Location.watchPositionAsync(
     {
       accuracy: Location.Accuracy.BestForNavigation,
@@ -153,20 +152,21 @@ export async function startTracking({ onTollCrossed, onPositionUpdate }) {
     processLocation
   );
 
-  // Start background location (runs even when app is backgrounded/locked)
-  await Location.startLocationUpdatesAsync(BACKGROUND_LOCATION_TASK, {
-    accuracy: Location.Accuracy.BestForNavigation,
-    distanceInterval: 50,
-    timeInterval: 5000,
-    showsBackgroundLocationIndicator: true,
-    foregroundService: {
-      notificationTitle: 'TAGcontrol',
-      notificationBody: 'Detectando peajes en tu viaje...',
-      notificationColor: '#0F6E56',
-    },
-    deferredUpdatesInterval: 5000,
-    deferredUpdatesDistance: 50,
-  });
+  if (background) {
+    await Location.startLocationUpdatesAsync(BACKGROUND_LOCATION_TASK, {
+      accuracy: Location.Accuracy.BestForNavigation,
+      distanceInterval: 50,
+      timeInterval: 5000,
+      showsBackgroundLocationIndicator: true,
+      foregroundService: {
+        notificationTitle: 'TAGcontrol',
+        notificationBody: 'Detectando peajes en tu viaje...',
+        notificationColor: '#0F6E56',
+      },
+      deferredUpdatesInterval: 5000,
+      deferredUpdatesDistance: 50,
+    });
+  }
 }
 
 /**

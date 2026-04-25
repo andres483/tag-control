@@ -19,6 +19,7 @@ export default function HomeScreen() {
   const [speed, setSpeed] = useState(0);
   const [startTime, setStartTime] = useState(null);
   const [budget, setBudget] = useState(null);
+  const [foregroundOnly, setForegroundOnly] = useState(false);
 
   const tripIdRef = useRef(null);
   const crossingsRef = useRef([]);
@@ -110,15 +111,18 @@ export default function HomeScreen() {
   }, [isActive, position?.lat, position?.lng, user.name]);
 
   const handleStartTrip = async () => {
-    const granted = await requestLocationPermissions();
-    if (!granted) {
+    const mode = await requestLocationPermissions();
+    if (!mode) {
       Alert.alert(
-        'Permiso requerido',
-        'TAGcontrol necesita acceso a tu ubicación "Siempre" para detectar peajes en segundo plano. Ve a Configuración > TAGcontrol > Ubicación > Siempre.',
+        'Permiso de ubicación requerido',
+        'TAGcontrol necesita acceso a tu ubicación para detectar peajes. Ve a Configuración > TAGcontrol > Ubicación y selecciona "Al usar la app" o "Siempre".',
         [{ text: 'OK' }]
       );
       return;
     }
+
+    const isBackground = mode === 'background';
+    setForegroundOnly(!isBackground);
 
     const id = `trip-${user.name}-${Date.now()}`;
     tripIdRef.current = id;
@@ -132,6 +136,7 @@ export default function HomeScreen() {
     await startTracking({
       onTollCrossed: handleTollCrossed,
       onPositionUpdate: handlePositionUpdate,
+      background: isBackground,
     });
   };
 
@@ -246,11 +251,19 @@ export default function HomeScreen() {
         </View>
 
         {/* Warning */}
-        {isActive && (
+        {isActive && !foregroundOnly && (
           <View style={s.activeNotice}>
             <Text style={s.activeNoticeText}>
               <Text style={{ fontWeight: '700' }}>GPS activo en segundo plano</Text>
               {' \u2014 puedes cerrar la app, seguimos detectando'}
+            </Text>
+          </View>
+        )}
+        {isActive && foregroundOnly && (
+          <View style={s.foregroundNotice}>
+            <Text style={s.foregroundNoticeText}>
+              <Text style={{ fontWeight: '700' }}>Mant\u00e9n la app visible</Text>
+              {' \u2014 el GPS se pausa si cierras la app. Para detecci\u00f3n en segundo plano, ve a Configuraci\u00f3n > TAGcontrol > Ubicaci\u00f3n > Siempre.'}
             </Text>
           </View>
         )}
@@ -323,6 +336,8 @@ const s = StyleSheet.create({
 
   activeNotice: { backgroundColor: '#ecfdf5', borderWidth: 1, borderColor: '#a7f3d0', borderRadius: 12, padding: 12, marginBottom: 12 },
   activeNoticeText: { fontSize: 12, color: '#065f46' },
+  foregroundNotice: { backgroundColor: '#fff8e1', borderWidth: 1, borderColor: '#ffe082', borderRadius: 12, padding: 12, marginBottom: 12 },
+  foregroundNoticeText: { fontSize: 12, color: '#7c5200' },
 
   crossingsList: { marginTop: 8 },
   crossingsTitle: { fontSize: 12, fontWeight: '600', color: '#888', letterSpacing: 1, marginBottom: 8 },

@@ -110,3 +110,20 @@ export async function updateEmail(name, email) {
 export async function logout() {
   await SecureStore.deleteItemAsync(USER_KEY);
 }
+
+export async function deleteAccount(name) {
+  // Get all trip IDs to cascade-delete crossings and positions
+  const { data: trips } = await supabase.from('trips').select('id').eq('driver', name);
+  const { data: liveTrips } = await supabase.from('live_trips').select('id').eq('driver', name);
+  const tripIds = [...(trips || []), ...(liveTrips || [])].map(t => t.id);
+
+  if (tripIds.length > 0) {
+    await supabase.from('live_crossings').delete().in('trip_id', tripIds);
+    await supabase.from('positions').delete().in('trip_id', tripIds);
+  }
+  await supabase.from('trips').delete().eq('driver', name);
+  await supabase.from('live_trips').delete().eq('driver', name);
+  await supabase.from('budgets').delete().eq('user_name', name);
+  await supabase.from('users').delete().eq('name', name);
+  await SecureStore.deleteItemAsync(USER_KEY);
+}

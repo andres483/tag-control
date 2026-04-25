@@ -17,11 +17,22 @@
       "supportsTablet": false,
       "bundleIdentifier": "co.blooming.tagcontrol",
       "infoPlist": {
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "TAGcontrol necesita tu ubicación para detectar peajes automáticamente mientras conduces, incluso en segundo plano.",
-        "NSLocationWhenInUseUsageDescription": "TAGcontrol necesita tu ubicación para detectar peajes mientras conduces.",
-        "NSLocationAlwaysUsageDescription": "TAGcontrol necesita acceso permanente a tu ubicación para detectar peajes en segundo plano.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "TAGcontrol usa tu ubicación para detectar peajes automáticamente mientras conduces. Solo se activa durante un viaje y se detiene cuando terminas.",
+        "NSLocationWhenInUseUsageDescription": "TAGcontrol usa tu ubicación para detectar peajes mientras conduces. Solo se activa durante un viaje activo.",
+        "NSLocationAlwaysUsageDescription": "TAGcontrol usa tu ubicación en segundo plano para detectar peajes aunque cierres la app durante el viaje. Solo se activa cuando inicias un viaje.",
         "UIBackgroundModes": ["location", "fetch"],
         "ITSAppUsesNonExemptEncryption": false
+      },
+      "privacyManifests": {
+        "NSPrivacyTracking": false,
+        "NSPrivacyTrackingDomains": [],
+        "NSPrivacyCollectedDataTypes": [],
+        "NSPrivacyAccessedAPITypes": [
+          {
+            "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryUserDefaults",
+            "NSPrivacyAccessedAPITypeReasons": ["CA92.1"]
+          }
+        ]
       }
     },
     "android": {
