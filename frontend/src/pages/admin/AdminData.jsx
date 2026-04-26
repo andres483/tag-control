@@ -8,6 +8,81 @@ const SEVERITY = {
 
 const POSITIONS_TTL_MS = 24 * 60 * 60 * 1000;
 
+function DetectionQuality({ completedTrips }) {
+  const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const recent = completedTrips.filter(t => new Date(t.start_time) > weekAgo);
+
+  if (recent.length === 0) return null;
+
+  const byDriver = {};
+  for (const t of recent) {
+    if (!byDriver[t.driver]) byDriver[t.driver] = { trips: 0, withTolls: 0, total: 0, platform: t.platform };
+    byDriver[t.driver].trips++;
+    if ((t.toll_count || 0) > 0) byDriver[t.driver].withTolls++;
+    byDriver[t.driver].total += t.toll_count || 0;
+  }
+
+  const rows = Object.entries(byDriver)
+    .map(([driver, d]) => ({
+      driver,
+      trips: d.trips,
+      rate: Math.round((d.withTolls / d.trips) * 100),
+      avg: (d.total / d.trips).toFixed(1),
+      platform: d.platform || 'web',
+    }))
+    .sort((a, b) => a.rate - b.rate);
+
+  const systemRate = Math.round(
+    (recent.filter(t => (t.toll_count || 0) > 0).length / recent.length) * 100
+  );
+
+  const rateColor = r => r >= 80 ? 'text-green-400' : r >= 50 ? 'text-yellow-400' : 'text-red-400';
+  const rateBg    = r => r >= 80 ? 'bg-green-500/20' : r >= 50 ? 'bg-yellow-500/20' : 'bg-red-500/20';
+  const platLabel = p => ({ ios: 'iOS', android: 'And', web: 'Web' }[p] || p);
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest">
+          Calidad de detección — últimos 7 días
+        </p>
+        <span className={`text-[11px] font-bold tabular-nums ${rateColor(systemRate)}`}>
+          {systemRate}% sistema
+        </span>
+      </div>
+
+      <div className="bg-white/5 rounded-xl overflow-hidden">
+        <table className="w-full text-[11px]">
+          <thead>
+            <tr className="border-b border-white/10 text-gray-500">
+              <th className="px-3 py-2 text-left font-medium">Usuario</th>
+              <th className="px-3 py-2 text-center font-medium">Plat</th>
+              <th className="px-3 py-2 text-center font-medium">Viajes</th>
+              <th className="px-3 py-2 text-center font-medium">Detección</th>
+              <th className="px-3 py-2 text-right font-medium">Avg peajes</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(r => (
+              <tr key={r.driver} className="border-b border-white/[0.04] last:border-0">
+                <td className="px-3 py-2 font-medium">{r.driver}</td>
+                <td className="px-3 py-2 text-center text-gray-500">{platLabel(r.platform)}</td>
+                <td className="px-3 py-2 text-center text-gray-400">{r.trips}</td>
+                <td className="px-3 py-2 text-center">
+                  <span className={`inline-block px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${rateBg(r.rate)} ${rateColor(r.rate)}`}>
+                    {r.rate}%
+                  </span>
+                </td>
+                <td className="px-3 py-2 text-right text-gray-400">{r.avg}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminData({ stats, allCrossings, allTrips, completedTrips = [], onReconstructTrip, reconstructing, reconstructResults, qaResult, feedbackItems = [] }) {
   const now = Date.now();
   const atRisk = completedTrips.filter(t => (t.toll_count || 0) === 0);
@@ -55,6 +130,8 @@ export default function AdminData({ stats, allCrossings, allTrips, completedTrip
           )}
         </div>
       )}
+
+      <DetectionQuality completedTrips={completedTrips} />
 
       {atRisk.length > 0 && (
         <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-3">
