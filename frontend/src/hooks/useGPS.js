@@ -62,7 +62,9 @@ export function useGPS({ onTollCrossed } = {}) {
       const lastCrossed = cooldownsRef.current[groupKey] || 0;
       const isInCooldown = now - lastCrossed < COOLDOWN_MS;
       const baseRadius = toll.radio_deteccion_m || DETECTION_RADIUS_M;
-      const accuracyBonus = accuracy > MAX_ACCURACY_M ? Math.min(accuracy * 0.3, baseRadius) : 0;
+      // Cap bonus at 75m regardless of accuracy — prevents effective radius from
+      // reaching adjacent toll portals when GPS is bad (e.g. 660m at accuracy=700m).
+      const accuracyBonus = accuracy > MAX_ACCURACY_M ? Math.min(accuracy * 0.15, 75) : 0;
       const radius = baseRadius + accuracyBonus;
 
       // wasRecentlyMoving handles urban tolls in traffic: the vehicle was at

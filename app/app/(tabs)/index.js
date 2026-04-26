@@ -5,6 +5,7 @@ import { useUser } from '../_layout';
 import { formatCLP, formatTime } from '../../src/lib/format';
 import { getTarifa, getTarifaLabel } from '../../src/lib/pricing';
 import { inferMissingTolls, inferPostTrip } from '../../src/lib/inference';
+import { TOLL_GROUP_KEY } from '../../src/lib/geoUtils';
 import { requestLocationPermissions, startTracking, stopTracking } from '../../src/lib/locationService';
 import { upsertLiveTrip, insertLiveCrossing, insertPosition, endLiveTrip, cleanupOldPositions, closeOrphanedTrips, flushPositionQueue } from '../../src/lib/liveTracking';
 import { supabase } from '../../src/lib/supabase';
@@ -54,7 +55,13 @@ export default function HomeScreen() {
 
       // Infer missing tolls
       const inferred = inferMissingTolls(updated);
-      const newInferred = inferred.filter(inf => !updated.some(c => (c.toll?.id || c.tollId) === inf.toll.id));
+      const newInferred = inferred.filter(inf => {
+        const infKey = TOLL_GROUP_KEY[inf.toll.id] || inf.toll.id;
+        return !updated.some(c => {
+          const cKey = TOLL_GROUP_KEY[c.toll?.id || c.tollId] || c.toll?.id || c.tollId;
+          return cKey === infKey;
+        });
+      });
 
       // Send to Supabase
       if (tripIdRef.current) {

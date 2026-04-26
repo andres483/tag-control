@@ -4,11 +4,15 @@
 // Cualquier miembro del grupo usa canonical_id como clave de cooldown.
 export const TOLL_GROUPS = [
   ['vs-florida',    'vs-cisterna'],   //  22m — mismo pórtico Vespucio Sur, ambas direcciones
-  ['vn-ruta5',      'vn-ce'],         //  52m — mismo pórtico Vespucio Norte
-  ['vn-salto',      'vn-recoleta'],   // 189m — pórticos Vespucio Norte consecutivos
+  ['vn-ruta5',      'vn-ce'],         //  52m — mismo pórtico VNE / Ruta 5 Norte (misma estructura)
+  ['vn-salto',      'vn-recoleta'],   // 189m — pórticos VNE consecutivos (posible doble cobro legítimo — verificar con datos reales)
   ['cn-p2.2',       'avo-piramide'],  //  43m — mismo pórtico físico Centenario/Pirámide
   ['ac-ns-alameda', 'ac-pa26'],       //  91m — misma glorieta Alameda, Autopista Central
 ];
+// NOT grouped (different concessions, both charges legitimate if both crossed):
+// ac-norte ↔ vn-ruta5/vn-ce: 416-453m, Autopista Central vs VNE in Quilicura.
+// At this interchange, GPS drift could fire both. Long-term fix: heading filter.
+// Short-term: accept false positive risk (very low probability with 300m base radii).
 
 export const TOLL_GROUP_KEY = {};
 for (const group of TOLL_GROUPS) {

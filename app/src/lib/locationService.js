@@ -74,6 +74,18 @@ function processLocation(location) {
 
   _onPositionUpdate?.({ lat: latitude, lng: longitude, speed: speedKmh, accuracy, timestamp });
 
+  // Battery optimization: skip the 81-toll detection loop when the driver is
+  // clearly far from all autopistas. Compute nearest toll distance first;
+  // if >5 km away and not recently at highway speed, no detection needed.
+  // GPS hardware still runs (OS controls that) — this saves CPU cycles only.
+  const SKIP_RADIUS_M = 5000;
+  if (!wasRecentlyMoving) {
+    const nearestTollDist = Math.min(...tollsData.tolls.map(t =>
+      haversine(latitude, longitude, t.lat, t.lng)
+    ));
+    if (nearestTollDist > SKIP_RADIUS_M) return;
+  }
+
   const useSegment =
     prev != null &&
     haversine(prev.lat, prev.lng, latitude, longitude) <= MAX_SEGMENT_M;
