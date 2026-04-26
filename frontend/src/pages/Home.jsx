@@ -8,9 +8,9 @@ import { upsertLiveTrip, insertLiveCrossing, endLiveTrip, insertPosition, cleanu
 import { submitFeedback } from '../lib/feedback';
 import { inferMissingTolls, inferPostTrip } from '../lib/inference';
 import { supabase } from '../lib/supabase';
-import { requestNotificationPermission, startBackgroundService, stopBackgroundService, updateBackgroundNotification, startNotificationUpdates, stopNotificationUpdates } from '../lib/backgroundService';
+import { requestNotificationPermission, startBackgroundService, stopBackgroundService, updateBackgroundNotification, startNotificationUpdates } from '../lib/backgroundService';
 import TollChip from '../components/TollChip';
-import { useUser } from '../App';
+import { useUser } from '../context/UserContext';
 
 export default function Home() {
   const { user } = useUser();

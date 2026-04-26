@@ -1,3 +1,4 @@
+/* global google */
 import { haversine } from './geoUtils';
 
 const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY;

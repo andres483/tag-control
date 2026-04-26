@@ -1,3 +1,4 @@
+/* global google */
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useTolls } from '../hooks/useTolls';
 import { getTarifa, getTarifaLabel } from '../lib/pricing';
@@ -75,7 +76,7 @@ export default function PlanRoute() {
       } else {
         setRoutes(enriched);
       }
-    } catch (err) {
+    } catch {
       setError('Error al buscar la ruta. Revisa los nombres e intenta de nuevo.');
     } finally {
       setLoading(false);

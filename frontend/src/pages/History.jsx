@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { getSavedTrips, clearTrips } from '../lib/storage';
 import { supabase } from '../lib/supabase';
 import { formatCLP, formatDate, formatTime } from '../lib/format';
-import { useUser } from '../App';
+import { useUser } from '../context/UserContext';
 
 const ADMIN_USER = 'Andres';
 

@@ -1,3 +1,4 @@
+/* global google */
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { formatCLP } from '../lib/format';
@@ -114,7 +115,7 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
   const toggleTheme = () => {
     const next = !dark;
     setDark(next);
-    try { localStorage.setItem('admin_theme', next ? 'dark' : 'light'); } catch {}
+    try { localStorage.setItem('admin_theme', next ? 'dark' : 'light'); } catch { /* no-op */ }
   };
 
   const bg = dark ? 'bg-[#111]' : 'bg-white';

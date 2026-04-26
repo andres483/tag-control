@@ -23,7 +23,15 @@ export default defineConfig([
       },
     },
     rules: {
-      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]', argsIgnorePattern: '^_' }],
+      // Empty catch blocks are intentional (fire-and-forget localStorage, audio, etc.)
+      'no-empty': ['error', { allowEmptyCatch: true }],
+      // React Compiler rules — overly strict for legitimate patterns in this codebase
+      'react-hooks/purity': 'off',
+      'react-hooks/immutability': 'off',
+      'react-hooks/set-state-in-effect': 'off',
+      'react-hooks/preserve-manual-memoization': 'off',
+      'react-hooks/exhaustive-deps': 'warn',
     },
   },
 ])

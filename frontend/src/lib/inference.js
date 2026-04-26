@@ -1,5 +1,4 @@
 import tollsData from '../data/tolls.json';
-import { getTarifa } from './pricing';
 import { haversine } from './geoUtils';
 
 // Default speed for timestamp estimation. Urban Santiago routes run ~70 km/h;
@@ -76,7 +75,7 @@ export function inferMissingTolls(crossings) {
   const inferred = [];
   const crossedIds = crossings.map(c => c.toll?.id || c.tollId);
 
-  for (const [routeName, sequence] of Object.entries(ROUTE_SEQUENCES)) {
+  for (const [_routeName, sequence] of Object.entries(ROUTE_SEQUENCES)) {
     // Encontrar qué pórticos de esta secuencia fueron cruzados
     const crossedInSequence = [];
     for (let i = 0; i < crossedIds.length; i++) {

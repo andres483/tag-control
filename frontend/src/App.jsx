@@ -1,4 +1,4 @@
-import { Component, createContext, useContext, lazy, Suspense } from 'react';
+import { Component, lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, NavLink, useLocation } from 'react-router-dom';
 import Home from './pages/Home';
 import PlanRoute from './pages/PlanRoute';
@@ -6,11 +6,10 @@ import History from './pages/History';
 import Privacy from './pages/Privacy';
 import Brand from './pages/Brand';
 import AuthGate from './components/AuthGate';
+import { UserContext } from './context/UserContext';
 
 const Admin = lazy(() => import('./pages/Admin'));
 
-export const UserContext = createContext(null);
-export function useUser() { return useContext(UserContext); }
 
 class ErrorBoundary extends Component {
   constructor(props) { super(props); this.state = { error: null }; }
