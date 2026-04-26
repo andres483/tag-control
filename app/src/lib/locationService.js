@@ -27,17 +27,20 @@ const BACKGROUND_LOCATION_TASK = 'TAGCONTROL_BACKGROUND_LOCATION';
 const DETECTION_RADIUS_M = 150;
 const MIN_SPEED_KMH = 15;
 const COOLDOWN_MS = 120000;
-// Max gap between consecutive GPS samples to treat them as a continuous segment.
-// Longer gaps (signal loss, app suspended) shouldn't draw a phantom straight line.
 const MAX_SEGMENT_M = 500;
+// Urban tolls in Santiago (Costanera Norte, Vespucio, Autopista Central) are
+// crossed at 2–5 km/h in traffic. Track last time we were at highway speed;
+// if within 3 minutes, accept the crossing even at crawling speed.
+const MOVING_BUFFER_MS = 3 * 60 * 1000;
 
 // In-memory state for background task
 let _onTollCrossed = null;
 let _onPositionUpdate = null;
 let _cooldowns = {};
 let _lastPosition = null;
+let _lastMovingAt = 0; // timestamp of last sample at >= MIN_SPEED_KMH
 let _isTracking = false;
-let _watchSubscription = null; // foreground watch — must call .remove() on stop
+let _watchSubscription = null;
 
 function processLocation(location) {
   const { latitude, longitude, speed: rawSpeed, accuracy } = location.coords;
@@ -55,19 +58,21 @@ function processLocation(location) {
   }
   if (speedKmh > 200) speedKmh = _lastPosition?.speed || 0;
 
+  const now = Date.now();
+
+  // Update moving buffer before storing position.
+  if (speedKmh >= MIN_SPEED_KMH) _lastMovingAt = now;
+  const wasRecentlyMoving = (now - _lastMovingAt) < MOVING_BUFFER_MS;
+
   const prev = _lastPosition;
   _lastPosition = { lat: latitude, lng: longitude, timestamp, speed: speedKmh };
 
   _onPositionUpdate?.({ lat: latitude, lng: longitude, speed: speedKmh, accuracy, timestamp });
 
-  // Segment-based proximity: at highway speed a single GPS point can fly past
-  // the radius without ever landing inside, so we measure the distance from
-  // each toll to the line segment between the previous and current sample.
   const useSegment =
     prev != null &&
     haversine(prev.lat, prev.lng, latitude, longitude) <= MAX_SEGMENT_M;
 
-  const now = Date.now();
   for (const toll of tollsData.tolls) {
     const lastCrossed = _cooldowns[toll.id] || 0;
     if (now - lastCrossed < COOLDOWN_MS) continue;
@@ -77,9 +82,11 @@ function processLocation(location) {
       ? pointToSegmentDistance(toll.lat, toll.lng, prev.lat, prev.lng, latitude, longitude)
       : haversine(latitude, longitude, toll.lat, toll.lng);
 
-    const speedOk =
-      speedKmh >= MIN_SPEED_KMH ||
-      (speedKmh === 0 && distance <= radius);
+    // wasRecentlyMoving handles urban tolls in traffic (Costanera Norte,
+    // Vespucio, Autopista Central): vehicle was at highway speed recently
+    // and slowed to crawl at the toll gate. Zero-speed fallback covers
+    // background mode where expo-location sometimes reports speed=0.
+    const speedOk = wasRecentlyMoving || (speedKmh === 0 && distance <= radius);
 
     if (distance <= radius && speedOk) {
       _cooldowns[toll.id] = now;
@@ -141,6 +148,7 @@ export async function startTracking({ onTollCrossed, onPositionUpdate, backgroun
   _onPositionUpdate = onPositionUpdate;
   _cooldowns = {};
   _lastPosition = null;
+  _lastMovingAt = 0;
   _isTracking = true;
 
   _watchSubscription = await Location.watchPositionAsync(

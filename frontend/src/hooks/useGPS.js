@@ -5,10 +5,15 @@ import tollsData from '../data/tolls.json';
 const DETECTION_RADIUS_M = 150;
 const MIN_SPEED_KMH = 20;
 const COOLDOWN_MS = 120000;
-const THROTTLE_MS = 3000; // Procesar GPS máximo cada 3 segundos
-const MAX_ACCURACY_M = 300; // Aceptar lecturas hasta 300m (iOS post-background da ~200m)
-const TOLL_CHECK_ACCURACY_M = 1000; // Para chequeo de peajes, aceptar incluso en túneles
-const MAX_SEGMENT_M = 500; // Gap máximo entre samples para tratarlos como segmento continuo
+const THROTTLE_MS = 3000;
+const MAX_ACCURACY_M = 300;
+const TOLL_CHECK_ACCURACY_M = 1000;
+const MAX_SEGMENT_M = 500;
+// Santiago urban tolls (Costanera Norte, Vespucio, etc.) can be crossed at
+// 2–5 km/h in traffic. We track the last time the vehicle moved at highway
+// speed; if that was within 3 minutes, we accept the crossing regardless of
+// current speed. This is the urban-traffic fix.
+const MOVING_BUFFER_MS = 3 * 60 * 1000;
 
 export function useGPS({ onTollCrossed } = {}) {
   const [position, setPosition] = useState(null);
@@ -20,8 +25,9 @@ export function useGPS({ onTollCrossed } = {}) {
   const cooldownsRef = useRef({});
   const onTollCrossedRef = useRef(onTollCrossed);
   const lastPositionRef = useRef(null);
-  const prevSampleRef = useRef(null); // Sample anterior sin throttle, para detección por segmento
-  const lastProcessedRef = useRef(0); // Throttle timestamp
+  const prevSampleRef = useRef(null);
+  const lastProcessedRef = useRef(0);
+  const lastMovingRef = useRef(0); // timestamp of last sample at >= MIN_SPEED_KMH
 
   useEffect(() => {
     onTollCrossedRef.current = onTollCrossed;
@@ -40,10 +46,11 @@ export function useGPS({ onTollCrossed } = {}) {
 
   const checkTollProximity = useCallback((lat, lng, currentSpeed, accuracy) => {
     const now = Date.now();
-    // Detección por segmento: a 80 km/h con sample cada 5s los puntos GPS están a
-    // ~110m, y un check punto-a-punto puede saltar por encima del radio sin que
-    // ningún sample caiga adentro. Medimos distancia del peaje al segmento entre
-    // sample anterior y actual cuando ambos están razonablemente cerca.
+
+    // Update moving buffer: track last time we were at highway speed.
+    if (currentSpeed >= MIN_SPEED_KMH) lastMovingRef.current = now;
+    const wasRecentlyMoving = (now - lastMovingRef.current) < MOVING_BUFFER_MS;
+
     const prev = prevSampleRef.current;
     const useSegment =
       prev != null &&
@@ -55,15 +62,13 @@ export function useGPS({ onTollCrossed } = {}) {
       const lastCrossed = cooldownsRef.current[toll.id] || 0;
       const isInCooldown = now - lastCrossed < COOLDOWN_MS;
       const baseRadius = toll.radio_deteccion_m || DETECTION_RADIUS_M;
-      // Cuando accuracy es mala (post-background), expandir el radio proporcionalmente
-      // pero limitar a 2x el radio base para no dar falsos positivos
       const accuracyBonus = accuracy > MAX_ACCURACY_M ? Math.min(accuracy * 0.3, baseRadius) : 0;
       const radius = baseRadius + accuracyBonus;
 
-      // Velocidad: si GPS reporta rawSpeed, confiar en ella.
-      // Si no hay speed (post-background, iOS), y estamos DENTRO del radio expandido,
-      // asumir que están en movimiento (nadie se detiene dentro de un pórtico)
-      const speedOk = currentSpeed >= MIN_SPEED_KMH || (currentSpeed === 0 && distance <= radius);
+      // wasRecentlyMoving handles urban tolls in traffic: the vehicle was at
+      // highway speed minutes ago and slowed to <15 km/h at the toll gate.
+      // The zero-speed fallback covers iOS background where no speed is reported.
+      const speedOk = wasRecentlyMoving || (currentSpeed === 0 && distance <= radius);
 
       if (distance <= radius && speedOk && !isInCooldown) {
         cooldownsRef.current[toll.id] = now;
@@ -110,6 +115,7 @@ export function useGPS({ onTollCrossed } = {}) {
     lastPositionRef.current = null;
     prevSampleRef.current = null;
     lastProcessedRef.current = 0;
+    lastMovingRef.current = 0;
 
     watchIdRef.current = navigator.geolocation.watchPosition(
       (pos) => {
