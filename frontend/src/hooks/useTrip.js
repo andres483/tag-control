@@ -3,7 +3,7 @@ import { getTarifa } from '../lib/pricing';
 import { saveTrip } from '../lib/storage';
 import { supabase } from '../lib/supabase';
 import { inferPostTrip } from '../lib/inference';
-import { reconstructTrip, mergeCrossings } from '../lib/reconstruction';
+import { reconstructTrip } from '../lib/reconstruction';
 
 export function useTrip() {
   const [isActive, setIsActive] = useState(false);
@@ -74,8 +74,8 @@ export function useTrip() {
         // Safety net: reconstruir desde posiciones GPS para encontrar peajes perdidos
         reconstructTrip(tripId, allCrossings).then((result) => {
           if (!result || result.newTolls === 0) return;
-          // Actualizar trip con peajes reconstruidos
-          const merged = mergeCrossings(allCrossings, result.crossings.filter(c => c.reconstructed));
+          // result.crossings ya es el merge correcto: allCrossings + nuevos reconstruidos
+          const merged = result.crossings;
           const newCost = merged.reduce((sum, c) => sum + getTarifa(c.toll, new Date(c.timestamp)), 0);
           const newRoutes = [...new Set(merged.map(c => c.toll.ruta))];
           supabase.from('trips').update({

@@ -7,29 +7,41 @@ Detecta cruces GPS en tiempo real, calcula tarifas, y lleva historial por conduc
 
 Hacer esto en orden al abrir cada conversación:
 
-1. Leer `MEMORY.md` y archivos de memoria relevantes (`project_ios_launch.md`, etc.)
-2. `git log --oneline -10` + `git status` — entender el estado actual del repo
+1. Leer `MEMORY.md` y archivos de memoria relevantes
+2. `git log --oneline -10` + `git status` — entender estado del repo
 3. Leer `ROADMAP.md` — qué está construido, qué está en progreso, qué sigue
-4. Si hay algo submitteado a Apple: verificar estado del build en EAS
-5. Preguntar: "¿qué construimos hoy?"
+4. `node scripts/cto-review.mjs --quick` — ¿cuántos commits desde el último audit?
+5. Si hay algo submitteado a Apple: verificar estado del build en EAS
+6. Tomar la iniciativa: proponer qué construir o qué auditar sin esperar que el usuario lo pida
 
+**El CTO hace las preguntas. No espera que se las hagan.**
 **Nunca contradecir decisiones de sesiones anteriores sin confirmación explícita.**
 **Antes de dar credenciales, URLs, o datos fijos — buscar en memoria primero.**
 
-## Sistema de mejora continua
+## Sistema de mejora continua — CTO Review
 
-Cada cierta cantidad de sesiones (o cuando el usuario lo pida) correr:
+El script `scripts/cto-review.mjs` es el sistema automático de audit. Lo corro yo, no el usuario.
 
 ```sh
-node scripts/multi-perspective-audit.mjs              # 5 perspectivas: Tech, PM, UX, Growth, CEO
-node scripts/multi-perspective-audit.mjs --focus=ux   # solo una perspectiva
-node scripts/multi-perspective-audit.mjs --format=whatsapp  # formato para compartir
+node scripts/cto-review.mjs              # auto: decide qué roles correr según commits
+node scripts/cto-review.mjs --full       # forza audit completo (5 roles)
+node scripts/cto-review.mjs --quick      # solo drift check, sin API
+node scripts/cto-review.mjs --mark       # marca HEAD como auditado (post-fix manual)
 ```
 
-El audit trae voces que un solo CTO no tiene. Los hallazgos críticos van al ROADMAP.md.
+**Umbrales automáticos:**
+- **0-3 commits**: solo drift check, sin llamadas API
+- **4-9 commits**: audit enfocado (tech obligatorio + ux si hay UI, product si hay backend)
+- **10+ commits** o `--full`: audit completo (tech + ux + product + growth + ceo)
 
-**Cadencia sugerida:** Correr el audit completo cada 10 sesiones de trabajo significativo,
-o antes de cualquier decisión arquitectónica importante.
+**El audit completo (`multi-perspective-audit.mjs`) para auditorías ad-hoc profundas:**
+```sh
+node scripts/multi-perspective-audit.mjs              # 5 perspectivas simultáneas
+node scripts/multi-perspective-audit.mjs --focus=tech # solo una perspectiva
+node scripts/multi-perspective-audit.mjs --format=whatsapp
+```
+
+Los hallazgos críticos van al ROADMAP.md. Los bugs encontrados se fijan en la misma sesión.
 
 ## Stack
 - **PWA (`frontend/`):** React 19 + Vite + Tailwind 4 + Supabase. Deploy en Vercel.

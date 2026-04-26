@@ -6,6 +6,11 @@ import { haversine } from './geoUtils';
 // intercity routes (Ruta 68, Ruta 78) run ~100 km/h.
 const AVG_HIGHWAY_SPEED_KMH = 90;
 
+// Maximum distance to infer backward from a single detected toll.
+// Prevents inflating short trips with 6+ inferred tolls on long routes.
+// 15 km ≈ 13 min at 70 km/h — a full Vespucio Norte end-to-end is ~18 km.
+const MAX_INFER_BACK_M = 15000;
+
 // Per-route speed overrides for accurate timestamp inference.
 const ROUTE_SPEEDS_KMH = {
   'Ruta 68':                    100,
@@ -186,6 +191,10 @@ function inferFromSingleToll(crossing, crossedIds) {
       const distM = detectedToll
         ? haversine(toll.lat, toll.lng, detectedToll.lat, detectedToll.lng)
         : (idx - j) * 4000; // fallback: ~4 km per toll if coords missing
+
+      // Skip tolls too far back — the trip likely didn't start that early.
+      if (distM > MAX_INFER_BACK_M) continue;
+
       const travelMs = (distM / 1000 / routeSpeed) * 3600 * 1000;
 
       inferred.push({

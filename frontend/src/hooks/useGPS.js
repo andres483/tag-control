@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { haversine, msToKmh, pointToSegmentDistance } from '../lib/geoUtils';
+import { haversine, msToKmh, pointToSegmentDistance, TOLL_GROUP_KEY } from '../lib/geoUtils';
 import tollsData from '../data/tolls.json';
 
 const DETECTION_RADIUS_M = 150;
@@ -13,17 +13,6 @@ const MAX_SEGMENT_M = 500;
 // before the actual crossing, so 3 min was sometimes too short.
 const MOVING_BUFFER_MS = 5 * 60 * 1000;
 
-// Toll pairs <250m apart share a single cooldown so only one crossing fires.
-// These exist because bidirectional tolls on the same portal have two entries.
-const TOLL_GROUPS = [
-  ['vs-florida', 'vs-cisterna'],   // 22m — same Vespucio Sur portal, both directions
-  ['vn-ruta5',   'vn-ce'],         // 52m — same Vespucio Norte portal
-  ['vn-salto',   'vn-recoleta'],   // 189m — adjacent Vespucio Norte gantries
-];
-const TOLL_GROUP_KEY = {};
-for (const group of TOLL_GROUPS) {
-  for (const id of group) TOLL_GROUP_KEY[id] = group[0];
-}
 
 export function useGPS({ onTollCrossed } = {}) {
   const [position, setPosition] = useState(null);

@@ -1,0 +1,26 @@
+{
+  "name": "tag-control",
+  "version": "1.0.0",
+  "description": "Detección automática de peajes en autopistas de Chile.",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/avillagran7-web/tag-control.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/avillagran7-web/tag-control/issues"
+  },
+  "homepage": "https://github.com/avillagran7-web/tag-control#readme",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.91.1"
+  }
+}

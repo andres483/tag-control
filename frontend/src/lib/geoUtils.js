@@ -1,3 +1,20 @@
+// Peajes que comparten un cooldown porque están en el mismo portal físico o
+// tan cerca (<200m) que un solo GPS update los dispararía a ambos.
+// Formato: cada grupo es [canonical_id, ...alias_ids].
+// Cualquier miembro del grupo usa canonical_id como clave de cooldown.
+export const TOLL_GROUPS = [
+  ['vs-florida',    'vs-cisterna'],   //  22m — mismo pórtico Vespucio Sur, ambas direcciones
+  ['vn-ruta5',      'vn-ce'],         //  52m — mismo pórtico Vespucio Norte
+  ['vn-salto',      'vn-recoleta'],   // 189m — pórticos Vespucio Norte consecutivos
+  ['cn-p2.2',       'avo-piramide'],  //  43m — mismo pórtico físico Centenario/Pirámide
+  ['ac-ns-alameda', 'ac-pa26'],       //  91m — misma glorieta Alameda, Autopista Central
+];
+
+export const TOLL_GROUP_KEY = {};
+for (const group of TOLL_GROUPS) {
+  for (const id of group) TOLL_GROUP_KEY[id] = group[0];
+}
+
 /**
  * Calcula la distancia en metros entre dos puntos GPS usando la fórmula haversine.
  */

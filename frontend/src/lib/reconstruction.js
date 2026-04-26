@@ -11,7 +11,7 @@
  */
 
 import { supabase } from './supabase';
-import { haversine, pointToSegmentDistance } from './geoUtils';
+import { haversine, pointToSegmentDistance, TOLL_GROUP_KEY } from './geoUtils';
 import { getTarifa } from './pricing';
 import tollsData from '../data/tolls.json';
 
@@ -57,7 +57,8 @@ export function reconstructFromPositions(positions) {
         ? pointToSegmentDistance(toll.lat, toll.lng, prev.lat, prev.lng, pos.lat, pos.lng)
         : haversine(pos.lat, pos.lng, toll.lat, toll.lng);
       const radius = toll.radio_deteccion_m || DETECTION_RADIUS_M;
-      const lastCrossed = cooldowns[toll.id] || 0;
+      const groupKey = TOLL_GROUP_KEY[toll.id] || toll.id;
+      const lastCrossed = cooldowns[groupKey] || 0;
       const inCooldown = ts - lastCrossed < COOLDOWN_MS;
 
       // Más permisivo que real-time: radio expandido 1.5x (positions son cada 30s,
@@ -68,7 +69,7 @@ export function reconstructFromPositions(positions) {
       const speedOk = speed >= MIN_SPEED_KMH || distance <= radius;
 
       if (distance <= expandedRadius && speedOk && !inCooldown) {
-        cooldowns[toll.id] = ts;
+        cooldowns[groupKey] = ts;
         crossings.push({
           toll,
           timestamp: ts,
@@ -90,14 +91,17 @@ export function reconstructFromPositions(positions) {
  * Prioriza real-time, agrega los reconstruidos que faltan.
  */
 export function mergeCrossings(realtimeCrossings, reconstructedCrossings) {
-  const realtimeIds = new Set(
-    realtimeCrossings.map(c => c.toll?.id || c.tollId)
+  // Normalize to group canonical key so portal pairs (vs-florida/vs-cisterna etc.)
+  // don't both appear when one was detected real-time and the other reconstructed.
+  const realtimeGroupKeys = new Set(
+    realtimeCrossings.map(c => TOLL_GROUP_KEY[c.toll?.id || c.tollId] || c.toll?.id || c.tollId)
   );
 
-  // Agregar solo los reconstruidos que no se detectaron en real-time
-  const newCrossings = reconstructedCrossings.filter(
-    c => !realtimeIds.has(c.toll.id)
-  );
+  // Agregar solo los reconstruidos cuyo grupo no se detectó en real-time
+  const newCrossings = reconstructedCrossings.filter(c => {
+    const gk = TOLL_GROUP_KEY[c.toll.id] || c.toll.id;
+    return !realtimeGroupKeys.has(gk);
+  });
 
   // Merge y ordenar por timestamp
   const merged = [
