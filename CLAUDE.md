@@ -3,6 +3,19 @@
 PWA + app nativa para tracking automático de peajes en autopistas de Chile.
 Detecta cruces GPS en tiempo real, calcula tarifas, y lleva historial por conductor.
 
+## Protocolo de inicio de sesión
+
+Hacer esto en orden al abrir cada conversación:
+
+1. Leer `MEMORY.md` y archivos de memoria relevantes (`project_ios_launch.md`, etc.)
+2. `git log --oneline -10` + `git status` — entender el estado actual del repo
+3. Leer `ROADMAP.md` — qué está construido, qué está en progreso, qué sigue
+4. Si hay algo submitteado a Apple: verificar estado del build en EAS
+5. Preguntar: "¿qué construimos hoy?"
+
+**Nunca contradecir decisiones de sesiones anteriores sin confirmación explícita.**
+**Antes de dar credenciales, URLs, o datos fijos — buscar en memoria primero.**
+
 ## Stack
 - **PWA (`frontend/`):** React 19 + Vite + Tailwind 4 + Supabase. Deploy en Vercel.
 - **App nativa (`app/`):** React Native + Expo SDK 54 + expo-location background. Build via EAS.
