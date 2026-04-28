@@ -120,7 +120,7 @@ export default function SettingsScreen() {
       </TouchableOpacity>
 
       {/* Privacy policy */}
-      <TouchableOpacity onPress={() => Linking.openURL('https://tagcontrol.vercel.app/privacy')}>
+      <TouchableOpacity onPress={() => Linking.openURL('https://tag-control.vercel.app/privacy')}>
         <Text style={s.privacyLink}>Política de privacidad</Text>
       </TouchableOpacity>
 

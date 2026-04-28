@@ -34,11 +34,12 @@ export async function getStoredUser() {
 export async function login(name, pin, email) {
   const hashed = await hashPin(name, pin);
 
-  // Try hashed PIN first (new standard)
+  // Try hashed PIN first (new standard).
+  // ilike = case-insensitive match so "Revisor" finds "revisor" (iOS auto-caps the name field).
   let { data: existing } = await supabase
     .from('users')
     .select('*')
-    .eq('name', name)
+    .ilike('name', name)
     .eq('pin', hashed)
     .single();
 
@@ -47,7 +48,7 @@ export async function login(name, pin, email) {
     const { data: legacy } = await supabase
       .from('users')
       .select('*')
-      .eq('name', name)
+      .ilike('name', name)
       .eq('pin', pin)
       .single();
 
@@ -75,7 +76,7 @@ export async function login(name, pin, email) {
   const { data: byName } = await supabase
     .from('users')
     .select('name')
-    .eq('name', name)
+    .ilike('name', name)
     .single();
 
   if (byName) return { error: 'PIN incorrecto' };
