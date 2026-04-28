@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Linking } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Linking, Image } from 'react-native';
 
 const PRIMARY = '#0F6E56';
 
@@ -47,9 +47,7 @@ export default function AuthScreen({ onLogin }) {
   return (
     <KeyboardAvoidingView style={s.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={s.card}>
-        <View style={s.iconWrap}>
-          <Text style={s.iconText}>TC</Text>
-        </View>
+        <Image source={require('../../assets/icon.png')} style={s.iconWrap} />
         <Text style={s.title}>TAGcontrol</Text>
         <Text style={s.subtitle}>Tu peaje, bajo control</Text>
 
@@ -127,8 +125,7 @@ export default function AuthScreen({ onLogin }) {
 const s = StyleSheet.create({
   container: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff', padding: 24 },
   card: { width: '100%', maxWidth: 340, alignItems: 'center' },
-  iconWrap: { width: 64, height: 64, borderRadius: 16, backgroundColor: PRIMARY, justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
-  iconText: { color: '#fff', fontWeight: '800', fontSize: 22 },
+  iconWrap: { width: 64, height: 64, borderRadius: 16, overflow: 'hidden', marginBottom: 16 },
   title: { fontSize: 24, fontWeight: '700', color: '#1a1a1a', marginBottom: 4 },
   subtitle: { fontSize: 14, color: '#888', marginBottom: 32 },
   emailPrompt: { fontSize: 14, color: '#555', textAlign: 'center', marginBottom: 16, lineHeight: 20 },

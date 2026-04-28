@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, AppState, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, AppState, Platform, Image } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useUser } from '../_layout';
 import { formatCLP, formatTime } from '../../src/lib/format';
@@ -205,9 +205,7 @@ export default function HomeScreen() {
   if (!isActive && crossings.length === 0) {
     return (
       <ScrollView style={s.container} contentContainerStyle={s.content}>
-        <View style={s.heroIcon}>
-          <Text style={s.heroIconText}>TC</Text>
-        </View>
+        <Image source={require('../../assets/icon.png')} style={s.heroIcon} />
         <Text style={s.heroTitle}>Registra tus peajes</Text>
         <Text style={s.heroSubtitle}>Detecta automaticamente cada peaje que cruzas</Text>
 
@@ -319,8 +317,7 @@ export default function HomeScreen() {
 const s = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
   content: { padding: 20, paddingBottom: 100 },
-  heroIcon: { width: 64, height: 64, borderRadius: 16, backgroundColor: PRIMARY, justifyContent: 'center', alignItems: 'center', alignSelf: 'center', marginTop: 20, marginBottom: 12 },
-  heroIconText: { color: '#fff', fontWeight: '800', fontSize: 22 },
+  heroIcon: { width: 64, height: 64, borderRadius: 16, overflow: 'hidden', alignSelf: 'center', marginTop: 20, marginBottom: 12 },
   heroTitle: { fontSize: 20, fontWeight: '700', textAlign: 'center', color: '#1a1a1a' },
   heroSubtitle: { fontSize: 14, color: '#888', textAlign: 'center', marginTop: 4, marginBottom: 24 },
   budgetCard: { backgroundColor: '#f5f5f5', borderRadius: 16, padding: 16, marginBottom: 16 },
