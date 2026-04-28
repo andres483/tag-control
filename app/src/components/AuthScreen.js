@@ -116,7 +116,7 @@ export default function AuthScreen({ onLogin }) {
           {needsEmail ? 'Solo lo usamos para tu cuenta' : 'Si es tu primera vez, se crea tu cuenta'}
         </Text>
 
-        <TouchableOpacity onPress={() => Linking.openURL('https://tagcontrol.vercel.app/privacy')}>
+        <TouchableOpacity onPress={() => Linking.openURL('https://tag-control.vercel.app/privacy')}>
           <Text style={s.privacyLink}>Política de privacidad</Text>
         </TouchableOpacity>
       </View>
