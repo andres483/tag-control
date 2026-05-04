@@ -3,6 +3,14 @@ import { supabase } from './supabase';
 
 const USER_KEY = 'tagcontrol_user';
 
+// Reviewer account: works completely offline — Apple review network can block Supabase
+const REVIEWER_USER = {
+  id: 'demo-local',
+  name: 'revisor',
+  email: 'revisor@demo.com',
+  isDemo: true,
+};
+
 async function hashPin(name, pin) {
   const data = new TextEncoder().encode(`${name}:${pin}`);
   const buf = await crypto.subtle.digest('SHA-256', data);
@@ -25,6 +33,11 @@ export async function getStoredUser() {
  * "Revisor" typed → finds "revisor" in DB → hashes as "revisor:pin" → matches.
  */
 export async function login(name, pin, email) {
+  if (name.trim().toLowerCase() === 'revisor' && pin === '2026') {
+    await SecureStore.setItemAsync(USER_KEY, JSON.stringify(REVIEWER_USER));
+    return { user: REVIEWER_USER };
+  }
+
   const { data: userRow } = await supabase
     .from('users')
     .select('*')
