@@ -64,6 +64,7 @@ export default function AuthScreen({ onLogin, onDemoLogin }) {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+        <View style={s.formContainer}>
         {/* Brand */}
         <Image source={require('../../assets/icon.png')} style={s.icon} />
         <Text style={s.title}>TAGcontrol</Text>
@@ -152,6 +153,7 @@ export default function AuthScreen({ onLogin, onDemoLogin }) {
         <TouchableOpacity onPress={() => Linking.openURL('https://tag-control.vercel.app/privacy')}>
           <Text style={s.privacyLink}>Política de privacidad</Text>
         </TouchableOpacity>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -165,6 +167,11 @@ const s = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: 48,
+  },
+  formContainer: {
+    width: '100%',
+    maxWidth: 480,
+    alignItems: 'center',
   },
   icon: { width: 72, height: 72, borderRadius: 18, marginBottom: 14 },
   title: { fontSize: 26, fontWeight: '700', color: '#1a1a1a', marginBottom: 4 },

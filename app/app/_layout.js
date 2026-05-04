@@ -1,4 +1,5 @@
 import { useEffect, useState, createContext, useContext } from 'react';
+import { View } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { getStoredUser, login, logout } from '../src/lib/auth';
@@ -19,7 +20,7 @@ export default function RootLayout() {
     });
   }, []);
 
-  if (loading) return null;
+  if (loading) return <View style={{ flex: 1, backgroundColor: '#fff' }} />;
 
   if (!user) {
     return (

@@ -15,12 +15,14 @@ export default function SettingsScreen() {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
+    if (user.isDemo) return;
     supabase.from('budgets').select('monthly_limit').eq('user_name', user.name).single()
       .then(({ data }) => {
         const v = data?.monthly_limit || 0;
         setCurrentLimit(v);
         setLimitInput(v > 0 ? String(v) : '');
-      });
+      })
+      .catch(() => {});
   }, [user.name]);
 
   const handleSave = async () => {
