@@ -66,7 +66,7 @@ export async function login(name, pin, email) {
   }
 
   // Name not found — register new user
-  if (!email) return { error: 'Ingresa tu email para registrarte' };
+  if (!email) return { needsEmail: true };
 
   const hashed = await hashPin(name, pin);
   const { data: newUser, error } = await supabase

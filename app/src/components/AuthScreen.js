@@ -16,7 +16,7 @@ export default function AuthScreen({ onLogin, onDemoLogin }) {
   const [needsEmail, setNeedsEmail] = useState(false);
   const [pendingUser, setPendingUser] = useState(null);
 
-  const canSubmit = name.trim() && pin.length === 4 && (!needsEmail || email.trim());
+  const canSubmit = name.trim() && pin.length === 4 && (!needsEmail || email.trim().includes('@'));
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
@@ -111,16 +111,6 @@ export default function AuthScreen({ onLogin, onDemoLogin }) {
               value={name}
               onChangeText={setName}
               autoCapitalize="words"
-              autoCorrect={false}
-            />
-            <TextInput
-              style={s.input}
-              placeholder="Email"
-              placeholderTextColor="#999"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
               autoCorrect={false}
             />
             <TextInput

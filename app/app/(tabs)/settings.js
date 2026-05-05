@@ -74,11 +74,11 @@ export default function SettingsScreen() {
       <ScrollView style={s.container} contentContainerStyle={s.content}>
         <View style={s.profileCard}>
           <View style={s.avatar}>
-            <Text style={s.avatarText}>D</Text>
+            <Text style={s.avatarText}>{user.name.charAt(0).toUpperCase()}</Text>
           </View>
           <View>
-            <Text style={s.profileName}>Modo Demo</Text>
-            <Text style={s.profileEmail}>Explorando sin cuenta</Text>
+            <Text style={s.profileName}>{user.name}</Text>
+            <Text style={s.profileEmail}>Cuenta de demostración</Text>
           </View>
         </View>
         <View style={s.section}>

@@ -49,12 +49,12 @@ export default function HistoryScreen() {
     setRefreshing(false);
   }, [user.name, user.isDemo, allTrips.length]);
 
-  useEffect(() => { load(true); }, [user.name]);
+  useEffect(() => { load(true); }, [user.name, user.isDemo]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     load(true);
-  }, [user.name]);
+  }, [user.name, user.isDemo]);
 
   const stats = useMemo(() => {
     const now = new Date();
