@@ -77,8 +77,8 @@ export default function HistoryScreen() {
   if (allTrips.length === 0) {
     return (
       <View style={s.center}>
-        <Text style={s.emptyTitle}>Sin viajes</Text>
-        <Text style={s.emptyHint}>Apareceran aqui al detener un viaje</Text>
+        <Text style={s.emptyTitle}>Aún no hay viajes</Text>
+        <Text style={s.emptyHint}>Aparecerán aquí cuando termines tu primer viaje</Text>
       </View>
     );
   }
@@ -126,11 +126,13 @@ export default function HistoryScreen() {
       {allTrips.map(trip => {
         const cx = trip.crossings || [];
         const isOpen = expandedTrip === trip.id;
-        const tripName = trip.routes.length > 0
-          ? trip.routes.join(' > ')
-          : cx.length > 0
-            ? `${cx[0].tollNombre} > ${cx[cx.length - 1].tollNombre}`
-            : 'Viaje';
+        const tripName = cx.length >= 2
+          ? `${cx[0].tollNombre} → ${cx[cx.length - 1].tollNombre}`
+          : cx.length === 1
+            ? cx[0].tollNombre
+            : trip.routes.length > 0
+              ? trip.routes.join(' → ')
+              : 'Viaje';
 
         return (
           <TouchableOpacity

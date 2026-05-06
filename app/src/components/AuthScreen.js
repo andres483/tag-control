@@ -68,12 +68,12 @@ export default function AuthScreen({ onLogin, onDemoLogin }) {
         {/* Brand */}
         <Image source={require('../../assets/icon.png')} style={s.icon} />
         <Text style={s.title}>TAGcontrol</Text>
-        <Text style={s.subtitle}>Tu peaje, bajo control</Text>
+        <Text style={s.subtitle}>¿Cuánto gastaste en peajes este mes?</Text>
 
         {/* Demo — visible BEFORE the form so it's never hidden by the keyboard */}
         <TouchableOpacity style={s.demoButton} onPress={handleDemo} disabled={demoLoading}>
           <Text style={s.demoButtonText}>
-            {demoLoading ? 'Cargando…' : 'Explorar sin cuenta →'}
+            {demoLoading ? 'Cargando…' : 'Ver cómo funciona →'}
           </Text>
         </TouchableOpacity>
 
@@ -137,7 +137,7 @@ export default function AuthScreen({ onLogin, onDemoLogin }) {
         </TouchableOpacity>
 
         <Text style={s.hint}>
-          {needsEmail ? 'Solo lo usamos para tu cuenta' : 'Si es tu primera vez, se crea tu cuenta'}
+          {needsEmail ? 'Solo lo usamos para recuperar tu cuenta' : '¿Primera vez? Pon tu nombre + PIN — se crea sola'}
         </Text>
 
         <TouchableOpacity onPress={() => Linking.openURL('https://tag-control.vercel.app/privacy')}>

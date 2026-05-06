@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, Platform, Image, Linking } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Platform, Image, Linking } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useUser } from '../_layout';
 import { formatCLP, formatTime } from '../../src/lib/format';
@@ -13,7 +13,7 @@ import { supabase } from '../../src/lib/supabase';
 const PRIMARY = '#0F6E56';
 
 export default function HomeScreen() {
-  const { user } = useUser();
+  const { user, logout } = useUser();
   const [isActive, setIsActive] = useState(false);
   const [crossings, setCrossings] = useState([]);
   const [position, setPosition] = useState(null);
@@ -148,55 +148,48 @@ export default function HomeScreen() {
   };
 
   const handleStopTrip = async () => {
-    Alert.alert('Detener viaje', 'Seguro?', [
-      { text: 'Cancelar', style: 'cancel' },
-      {
-        text: 'Detener', style: 'destructive', onPress: async () => {
-          await stopTracking();
-          const currentId = tripIdRef.current;
-          const cx = crossingsRef.current;
+    await stopTracking();
+    const currentId = tripIdRef.current;
+    const cx = crossingsRef.current;
 
-          // Post-trip inference
-          const inferred = inferPostTrip(cx);
-          const allCrossings = [...cx, ...inferred].sort((a, b) => a.timestamp - b.timestamp);
-          const cost = allCrossings.reduce((sum, c) => sum + getTarifa(c.toll, new Date(c.timestamp)), 0);
-          const routes = [...new Set(allCrossings.map(c => c.toll.ruta))];
+    // Post-trip inference
+    const inferred = inferPostTrip(cx);
+    const allCrossings = [...cx, ...inferred].sort((a, b) => a.timestamp - b.timestamp);
+    const cost = allCrossings.reduce((sum, c) => sum + getTarifa(c.toll, new Date(c.timestamp)), 0);
+    const routes = [...new Set(allCrossings.map(c => c.toll.ruta))];
 
-          // Siempre grabamos el trip aunque tenga 0 peajes — las posiciones GPS
-          // siguen vivas 24h y el Admin las puede reconstruir. Tirar el trip
-          // silenciosamente esconde fallas de detección (bug Francisco 2026-04-15).
-          if (currentId) {
-            // Flush any buffered positions before saving trip so reconstruction works
-            await flushPositionQueue().catch(() => {});
+    // Siempre grabamos el trip aunque tenga 0 peajes — las posiciones GPS
+    // siguen vivas 24h y el Admin las puede reconstruir. Tirar el trip
+    // silenciosamente esconde fallas de detección (bug Francisco 2026-04-15).
+    if (currentId) {
+      // Flush any buffered positions before saving trip so reconstruction works
+      await flushPositionQueue().catch(() => {});
 
-            const tripRow = {
-              id: currentId, driver: user.name,
-              start_time: new Date(startTime || allCrossings[0]?.timestamp || Date.now()).toISOString(),
-              end_time: new Date().toISOString(),
-              total_cost: cost, toll_count: allCrossings.length, routes,
-              platform: Platform.OS,
-              crossings: allCrossings.map(c => ({
-                tollId: c.toll.id, tollNombre: c.toll.nombre, tollRuta: c.toll.ruta,
-                tarifa: getTarifa(c.toll, new Date(c.timestamp)),
-                timestamp: c.timestamp, inferred: c.inferred || false,
-              })),
-            };
+      const tripRow = {
+        id: currentId, driver: user.name,
+        start_time: new Date(startTime || allCrossings[0]?.timestamp || Date.now()).toISOString(),
+        end_time: new Date().toISOString(),
+        total_cost: cost, toll_count: allCrossings.length, routes,
+        platform: Platform.OS,
+        crossings: allCrossings.map(c => ({
+          tollId: c.toll.id, tollNombre: c.toll.nombre, tollRuta: c.toll.ruta,
+          tarifa: getTarifa(c.toll, new Date(c.timestamp)),
+          timestamp: c.timestamp, inferred: c.inferred || false,
+        })),
+      };
 
-            // Retry trip insert up to 3x — losing a trip row is unacceptable
-            let saved = false;
-            for (let attempt = 0; attempt < 3 && !saved; attempt++) {
-              if (attempt > 0) await new Promise(r => setTimeout(r, 1000 * attempt));
-              const { error } = await supabase.from('trips').insert(tripRow);
-              if (!error) saved = true;
-            }
-          }
+      // Retry trip insert up to 3x — losing a trip row is unacceptable
+      let saved = false;
+      for (let attempt = 0; attempt < 3 && !saved; attempt++) {
+        if (attempt > 0) await new Promise(r => setTimeout(r, 1000 * attempt));
+        const { error } = await supabase.from('trips').insert(tripRow);
+        if (!error) saved = true;
+      }
+    }
 
-          if (currentId) endLiveTrip(currentId).catch(() => {});
-          tripIdRef.current = null;
-          setIsActive(false);
-        },
-      },
-    ]);
+    if (currentId) endLiveTrip(currentId).catch(() => {});
+    tripIdRef.current = null;
+    setIsActive(false);
   };
 
   const tarifaLabel = getTarifaLabel();
@@ -206,21 +199,15 @@ export default function HomeScreen() {
     return (
       <ScrollView style={s.container} contentContainerStyle={s.content}>
         <Image source={require('../../assets/icon.png')} style={s.heroIcon} />
-        <Text style={s.heroTitle}>TAGcontrol</Text>
-        <Text style={s.heroSubtitle}>Detecta automaticamente cada peaje que cruzas</Text>
-        <View style={s.demoBanner}>
-          <Text style={s.demoBannerTitle}>Modo demostración</Text>
-          <Text style={s.demoBannerText}>
-            Estás explorando TAGcontrol con datos de ejemplo. Crea una cuenta para registrar tus viajes reales.
-          </Text>
-          <TouchableOpacity onPress={() => Linking.openURL('https://tag-control.vercel.app/privacy')}>
-            <Text style={s.demoBannerLink}>Política de privacidad</Text>
-          </TouchableOpacity>
-        </View>
-        <TouchableOpacity style={[s.startButton, { opacity: 0.4 }]} disabled>
-          <Text style={s.startButtonText}>Iniciar viaje</Text>
+        <Text style={s.heroTitle}>¿Cuánto te cobran en peajes?</Text>
+        <Text style={s.heroSubtitle}>Estás viendo datos de ejemplo. Con una cuenta, TAGcontrol detecta cada peaje que cruzas — automáticamente.</Text>
+        <TouchableOpacity style={s.createAccountButton} onPress={logout}>
+          <Text style={s.createAccountButtonText}>Registrarme y empezar →</Text>
         </TouchableOpacity>
-        <Text style={s.tarifaHint}>Disponible al crear una cuenta</Text>
+        <Text style={s.tarifaHint}>Gratis · Sin publicidad · Tus datos son tuyos</Text>
+        <TouchableOpacity style={{ marginTop: 24 }} onPress={() => Linking.openURL('https://tag-control.vercel.app/privacy')}>
+          <Text style={s.demoBannerLink}>Política de privacidad</Text>
+        </TouchableOpacity>
       </ScrollView>
     );
   }
@@ -230,12 +217,12 @@ export default function HomeScreen() {
     return (
       <ScrollView style={s.container} contentContainerStyle={s.content}>
         <Image source={require('../../assets/icon.png')} style={s.heroIcon} />
-        <Text style={s.heroTitle}>Registra tus peajes</Text>
-        <Text style={s.heroSubtitle}>Detecta automaticamente cada peaje que cruzas</Text>
+        <Text style={s.heroTitle}>Hola, {user.name.split(' ')[0]}</Text>
+        <Text style={s.heroSubtitle}>¿Listo para el viaje?</Text>
 
         {budget && (
           <View style={s.budgetCard}>
-            <Text style={s.budgetLabel}>Peajes este mes</Text>
+            <Text style={s.budgetLabel}>Gastado en peajes este mes</Text>
             <Text style={s.budgetAmount}>{formatCLP(budget.spent)}</Text>
             {budget.monthly_limit > 0 && (
               <View style={s.progressBar}>
@@ -316,8 +303,11 @@ export default function HomeScreen() {
         {/* Waiting spinner */}
         {isActive && crossings.length === 0 && (
           <View style={s.waiting}>
-            <Text style={s.waitingText}>Conduciendo...</Text>
-            <Text style={s.waitingHint}>Suena una alerta en cada peaje</Text>
+            <View style={s.gpsActiveRow}>
+              <View style={s.gpsActiveDot} />
+              <Text style={s.waitingText}>GPS activo — buscando peajes</Text>
+            </View>
+            <Text style={s.waitingHint}>Suena una alerta al cruzar</Text>
           </View>
         )}
       </ScrollView>
@@ -346,7 +336,9 @@ const s = StyleSheet.create({
   heroSubtitle: { fontSize: 14, color: '#888', textAlign: 'center', marginTop: 4, marginBottom: 24 },
   budgetCard: { backgroundColor: '#f5f5f5', borderRadius: 16, padding: 16, marginBottom: 16 },
   budgetLabel: { fontSize: 12, fontWeight: '600', color: '#888', textTransform: 'uppercase', letterSpacing: 0.5 },
-  budgetAmount: { fontSize: 26, fontWeight: '700', color: '#1a1a1a', marginTop: 4 },
+  budgetAmount: { fontSize: 34, fontWeight: '700', color: '#1a1a1a', marginTop: 4 },
+  createAccountButton: { backgroundColor: PRIMARY, borderRadius: 16, paddingVertical: 16, alignItems: 'center', marginBottom: 12, width: '100%' },
+  createAccountButtonText: { color: '#fff', fontWeight: '700', fontSize: 16 },
   progressBar: { height: 6, backgroundColor: '#e0e0e0', borderRadius: 3, marginTop: 8 },
   progressFill: { height: 6, borderRadius: 3 },
   startButton: { backgroundColor: PRIMARY, borderRadius: 16, paddingVertical: 16, alignItems: 'center', marginBottom: 12 },
@@ -379,10 +371,12 @@ const s = StyleSheet.create({
   crossingCost: { fontSize: 16, fontWeight: '700', color: PRIMARY },
 
   waiting: { alignItems: 'center', paddingVertical: 40 },
-  waitingText: { fontSize: 16, color: '#1a1a1a', marginTop: 12 },
-  waitingHint: { fontSize: 12, color: '#888', marginTop: 4 },
+  gpsActiveRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  gpsActiveDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: '#22c55e', borderWidth: 2, borderColor: '#86efac' },
+  waitingText: { fontSize: 16, color: '#1a1a1a' },
+  waitingHint: { fontSize: 12, color: '#888', marginTop: 6 },
 
   bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 20, paddingBottom: 36, backgroundColor: '#fff' },
-  stopButton: { backgroundColor: '#e53935', borderRadius: 16, paddingVertical: 16, alignItems: 'center' },
-  stopButtonText: { color: '#fff', fontWeight: '600', fontSize: 16 },
+  stopButton: { backgroundColor: '#e53935', borderRadius: 16, paddingVertical: 20, alignItems: 'center' },
+  stopButtonText: { color: '#fff', fontWeight: '700', fontSize: 17 },
 });

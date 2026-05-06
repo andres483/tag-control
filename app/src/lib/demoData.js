@@ -23,9 +23,9 @@ export const DEMO_TRIPS = [
     tollCount: 3,
     routes: ['Ruta 68'],
     crossings: [
-      { tollNombre: 'Las Vegas', tollRuta: 'Ruta 68', tarifa: 2100 },
-      { tollNombre: 'Zapata', tollRuta: 'Ruta 68', tarifa: 1360 },
-      { tollNombre: 'Lo Prado', tollRuta: 'Ruta 68', tarifa: 1360 },
+      { tollNombre: 'Las Vegas', tollRuta: 'Ruta 68', tarifa: 2100, timestamp: now - 5 * day + 20 * 60000 },
+      { tollNombre: 'Zapata', tollRuta: 'Ruta 68', tarifa: 1360, timestamp: now - 5 * day + 38 * 60000 },
+      { tollNombre: 'Lo Prado', tollRuta: 'Ruta 68', tarifa: 1360, timestamp: now - 5 * day + 54 * 60000 },
     ],
   },
   {
@@ -37,8 +37,8 @@ export const DEMO_TRIPS = [
     tollCount: 2,
     routes: ['Costanera Norte'],
     crossings: [
-      { tollNombre: 'Túnel San Cristóbal', tollRuta: 'Costanera Norte', tarifa: 1660 },
-      { tollNombre: 'Avenida El Salto', tollRuta: 'Costanera Norte', tarifa: 1660 },
+      { tollNombre: 'Túnel San Cristóbal', tollRuta: 'Costanera Norte', tarifa: 1660, timestamp: now - 8 * day + 12 * 60000 },
+      { tollNombre: 'Avenida El Salto', tollRuta: 'Costanera Norte', tarifa: 1660, timestamp: now - 8 * day + 28 * 60000 },
     ],
   },
   {
@@ -50,9 +50,9 @@ export const DEMO_TRIPS = [
     tollCount: 3,
     routes: ['Autopista Central'],
     crossings: [
-      { tollNombre: 'Franklin', tollRuta: 'Autopista Central', tarifa: 1460 },
-      { tollNombre: 'Lo Ovalle', tollRuta: 'Autopista Central', tarifa: 1460 },
-      { tollNombre: 'Kennedy', tollRuta: 'Autopista Central', tarifa: 1460 },
+      { tollNombre: 'Franklin', tollRuta: 'Autopista Central', tarifa: 1460, timestamp: now - 11 * day + 15 * 60000 },
+      { tollNombre: 'Lo Ovalle', tollRuta: 'Autopista Central', tarifa: 1460, timestamp: now - 11 * day + 32 * 60000 },
+      { tollNombre: 'Kennedy', tollRuta: 'Autopista Central', tarifa: 1460, timestamp: now - 11 * day + 48 * 60000 },
     ],
   },
   {
@@ -64,8 +64,8 @@ export const DEMO_TRIPS = [
     tollCount: 2,
     routes: ['Ruta 68'],
     crossings: [
-      { tollNombre: 'Las Vegas', tollRuta: 'Ruta 68', tarifa: 1360 },
-      { tollNombre: 'Zapata', tollRuta: 'Ruta 68', tarifa: 1360 },
+      { tollNombre: 'Las Vegas', tollRuta: 'Ruta 68', tarifa: 1360, timestamp: now - 15 * day + 18 * 60000 },
+      { tollNombre: 'Zapata', tollRuta: 'Ruta 68', tarifa: 1360, timestamp: now - 15 * day + 35 * 60000 },
     ],
   },
   {
@@ -77,8 +77,8 @@ export const DEMO_TRIPS = [
     tollCount: 2,
     routes: ['Costanera Norte'],
     crossings: [
-      { tollNombre: 'Avenida El Salto', tollRuta: 'Costanera Norte', tarifa: 730 },
-      { tollNombre: 'Américo Vespucio', tollRuta: 'Costanera Norte', tarifa: 724 },
+      { tollNombre: 'Avenida El Salto', tollRuta: 'Costanera Norte', tarifa: 730, timestamp: now - 20 * day + 10 * 60000 },
+      { tollNombre: 'Américo Vespucio', tollRuta: 'Costanera Norte', tarifa: 724, timestamp: now - 20 * day + 24 * 60000 },
     ],
   },
 ];
