@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Platform, Image, Linking } from 'react-native';
+import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useUser } from '../_layout';
 import { formatCLP, formatTime } from '../../src/lib/format';
@@ -200,9 +201,12 @@ export default function HomeScreen() {
       <ScrollView style={s.container} contentContainerStyle={s.content}>
         <Image source={require('../../assets/icon.png')} style={s.heroIcon} />
         <Text style={s.heroTitle}>¿Cuánto te cobran en peajes?</Text>
-        <Text style={s.heroSubtitle}>Estás viendo datos de ejemplo. Con una cuenta, TAGcontrol detecta cada peaje que cruzas — automáticamente.</Text>
-        <TouchableOpacity style={s.createAccountButton} onPress={logout}>
-          <Text style={s.createAccountButtonText}>Registrarme y empezar →</Text>
+        <Text style={s.heroSubtitle}>TAGcontrol detecta automáticamente cada peaje que cruzas en autopistas de Chile y lleva tu historial de gastos.</Text>
+        <TouchableOpacity style={s.createAccountButton} onPress={() => router.navigate('/(tabs)/history')}>
+          <Text style={s.createAccountButtonText}>Ver viajes de ejemplo →</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[s.createAccountButton, { backgroundColor: '#f5f5f5', borderColor: '#ddd', marginTop: 12 }]} onPress={logout}>
+          <Text style={[s.createAccountButtonText, { color: '#555' }]}>Crear cuenta real</Text>
         </TouchableOpacity>
         <Text style={s.tarifaHint}>Gratis · Sin publicidad · Tus datos son tuyos</Text>
         <TouchableOpacity style={{ marginTop: 24 }} onPress={() => Linking.openURL('https://tag-control.vercel.app/privacy')}>

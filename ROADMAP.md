@@ -12,7 +12,7 @@ No hay fechas. Construimos en bloques de valor. Un día de trabajo intenso vale 
 - App nativa (React Native + Expo SDK 54) — background GPS real, notificaciones push
 - Admin dashboard — tabs Live, DB, Arquitectura con QA findings y at-risk trips
 - Agent layer — QA, GPS Calibration, Analytics, Code Review, Release
-- Apple App Store — Build 14 WAITING_FOR_REVIEW (6 May 2026) — fixes acumulados: iPad support, revisor/2026 offline bypass, demo mode, auth SHA-256, screenshots
+- Apple App Store — Build 14 re-submitteado (7 May 2026) — fix: review notes decían "3 campos", app tiene 2. Notas corregidas via ASC API + re-submit directo.
 - Auth PIN-based — SHA-256 hash, SecureStore nativa, compatible Hermes/Expo SDK 54
 - Inferencia de peajes — túneles, gaps GPS, ROUTE_SEQUENCES
 - Build & deploy — EAS (iOS/Android) + Vercel auto-deploy
@@ -21,7 +21,7 @@ No hay fechas. Construimos en bloques de valor. Un día de trabajo intenso vale 
 
 ## 🔨 En progreso
 
-- Apple App Store review — Build 14 WAITING_FOR_REVIEW (6 May 2026, EAS: 6bcf4703). Esperando revisión de Apple. Reply en Resolution Center si piden aclaración.
+- Apple App Store review — Build 14 re-submitteado (7 May 2026). Esperando revisión de Apple.
 - 100 usuarios activos con detección 100% precisa
 
 ---
