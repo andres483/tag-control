@@ -31,6 +31,7 @@ export default function HomeScreen() {
 
   // Load budget
   useEffect(() => {
+    if (user.isDemo) { setBudget({ monthly_limit: 0, spent: 0 }); return; }
     async function loadBudget() {
       try {
         const { data: b } = await supabase.from('budgets').select('*').eq('user_name', user.name).single();
@@ -43,7 +44,7 @@ export default function HomeScreen() {
       } catch { setBudget({ monthly_limit: 0, spent: 0 }); }
     }
     loadBudget();
-  }, [user.name, isActive]);
+  }, [user.name, user.isDemo, isActive]);
 
   const totalCost = crossings.reduce((sum, c) => sum + getTarifa(c.toll, new Date(c.timestamp)), 0);
   const tollCount = crossings.length;

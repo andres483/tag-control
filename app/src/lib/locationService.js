@@ -169,32 +169,33 @@ export async function startTracking({ onTollCrossed, onPositionUpdate, backgroun
   _lastMovingAt = 0;
   _isTracking = true;
 
-  _watchSubscription = await Location.watchPositionAsync(
-    {
+  if (background) {
+    // Background task handles ALL position updates (foreground + background).
+    // No separate watchPositionAsync — avoids double-calling processLocation.
+    await Location.startLocationUpdatesAsync(BACKGROUND_LOCATION_TASK, {
       accuracy: Location.Accuracy.BestForNavigation,
       distanceInterval: 20,
       timeInterval: 3000,
-    },
-    processLocation
-  );
-
-  if (background) {
-    await Location.startLocationUpdatesAsync(BACKGROUND_LOCATION_TASK, {
-      accuracy: Location.Accuracy.BestForNavigation,
-      distanceInterval: 50,
-      timeInterval: 5000,
       showsBackgroundLocationIndicator: true,
-      // Prevent iOS from pausing GPS when the device appears stationary —
-      // toll queues look stationary to the OS but we still need position updates.
       pausesUpdatesAutomatically: false,
       foregroundService: {
         notificationTitle: 'TAGcontrol',
         notificationBody: 'Detectando peajes en tu viaje...',
         notificationColor: '#0F6E56',
       },
-      deferredUpdatesInterval: 5000,
-      deferredUpdatesDistance: 50,
+      deferredUpdatesInterval: 3000,
+      deferredUpdatesDistance: 20,
     });
+  } else {
+    // Foreground-only fallback (background permission denied).
+    _watchSubscription = await Location.watchPositionAsync(
+      {
+        accuracy: Location.Accuracy.BestForNavigation,
+        distanceInterval: 20,
+        timeInterval: 3000,
+      },
+      processLocation
+    );
   }
 }
 
