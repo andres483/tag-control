@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   KeyboardAvoidingView, Platform, Linking, Image, ScrollView,
@@ -15,6 +15,14 @@ export default function AuthScreen({ onLogin, onDemoLogin }) {
   const [demoLoading, setDemoLoading] = useState(false);
   const [needsEmail, setNeedsEmail] = useState(false);
   const [pendingUser, setPendingUser] = useState(null);
+  const emailRef = useRef(null);
+
+  useEffect(() => {
+    if (needsEmail) {
+      const t = setTimeout(() => emailRef.current?.focus(), 150);
+      return () => clearTimeout(t);
+    }
+  }, [needsEmail]);
 
   const canSubmit = name.trim() && pin.length === 4 && (!needsEmail || email.trim().includes('@'));
 
@@ -43,7 +51,7 @@ export default function AuthScreen({ onLogin, onDemoLogin }) {
         }
       }
     } catch {
-      setError('Sin conexión. Usa "Explorar sin cuenta" para ver la app.');
+      setError('Sin conexión. Toca "Ver cómo funciona →" para explorar la app.');
     }
     setLoading(false);
   };
@@ -91,6 +99,7 @@ export default function AuthScreen({ onLogin, onDemoLogin }) {
               Hola {pendingUser?.name}, agrega tu email para continuar
             </Text>
             <TextInput
+              ref={emailRef}
               style={s.input}
               placeholder="tu@email.com"
               placeholderTextColor="#999"
@@ -99,7 +108,8 @@ export default function AuthScreen({ onLogin, onDemoLogin }) {
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
-              autoFocus
+              returnKeyType="done"
+              onSubmitEditing={handleSubmit}
             />
           </>
         ) : (
