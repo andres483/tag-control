@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Platform, Image, Linking } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Platform, Image, Linking, Alert } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useUser } from '../_layout';

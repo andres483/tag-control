@@ -166,5 +166,124 @@ Cinco agents operacionales en `scripts/`:
 |---|---|
 | PWA | `git push` → Vercel auto-deploy |
 | Android APK | `node scripts/release-agent.mjs` o EAS directo |
-| iOS | Pendiente Apple Developer account → EAS build → TestFlight |
+| iOS | EAS build production → `node scripts/asc-update-build15.mjs --submit` |
 | Expo org | `@andrespanthervillagran/tagcontrol` (ID: `adeffd89-13d6-43fa-8516-36bfa26fd206`) |
+
+---
+
+## ⛔ REGLA OBLIGATORIA ANTES DE CADA iOS BUILD
+
+> Esta regla existe porque tuvimos 5+ rechazos de Apple evitables.
+> El patrón fue siempre el mismo: fix el rechazo sin walkthrough completo.
+> **Nunca más.**
+
+Antes de correr `eas-cli build --platform ios`, yo (el CTO) hago los 5 walkthroughs
+completos con el código abierto en mano. No en abstracto — línea por línea.
+
+### Los 5 perfiles de Apple reviewer que debo simular:
+
+**Perfil 1 — El Metódico (sigue instrucciones al pie de la letra)**
+```
+1. Abre app → AuthScreen
+2. Escribe "revisor" + "2026" → toca Entrar
+3. Verifica: llega al Home demo (no crash, no error)
+4. Tab Historial → 5 viajes con fechas y costos (no "undefined")
+5. Tab Configuración → nombre "revisor", "Cuenta de demostración"
+6. Toca "Ver viajes de ejemplo →" en Home → va a Historial (no logout)
+7. Toca "Salir del modo demo" → vuelve al login (esperado)
+VALIDAR EN CÓDIGO: auth.js línea 36 (bypass offline), history.js línea 30 (isDemo guard)
+```
+
+**Perfil 2 — El Explorador (ignora instrucciones, crea cuenta nueva)**
+```
+1. Abre app → escribe nombre nuevo + PIN de 4 dígitos → Entrar
+2. App muestra campo de email (needsEmail flow)
+3. Campo de email recibe foco automáticamente y acepta texto
+4. Escribe email → Entrar → cuenta creada → app abre
+5. Home para usuario nuevo: budget $0, botón "Iniciar viaje"
+6. Historial: estado vacío "Aún no hay viajes"
+7. Toca "Iniciar viaje" → permiso de ubicación → concede → viaje inicia
+8. Detiene viaje → trip guardado en Supabase (aunque 0 peajes)
+VALIDAR EN CÓDIGO: AuthScreen.js emailRef+useEffect, auth.js línea 69-81, index.js Alert import
+```
+
+**Perfil 3 — El Veloz (toca demo button, revisa 2-3 pantallas)**
+```
+1. Abre app → toca "Ver cómo funciona →"
+2. Home demo carga (sin Supabase, sin crash)
+3. Historial: 5 viajes con timestamps reales (no "undefined", no NaN)
+4. Expande un viaje → peajes individuales con nombres y costos
+5. Settings demo → avatar con inicial, "Cuenta de demostración"
+VALIDAR EN CÓDIGO: demoData.js (timestamps en crossings), history.js línea 154-158 (detailRow)
+```
+
+**Perfil 4 — El de Compliance (revisa cada botón y cada link)**
+```
+1. Privacy link en AuthScreen → abre tag-control.vercel.app/privacy (existe ✓)
+2. Privacy link en Home demo → abre privacy (✓)
+3. Privacy link en Settings → abre privacy (✓)
+4. Niega permiso de ubicación → app muestra Alert (no crash)
+   CRÍTICO: Alert debe estar importado en index.js
+5. "Eliminar cuenta" (solo en usuario real, no demo) → Alert de confirmación
+6. Support URL en App Store → tag-control.vercel.app/support (existe ✓)
+VALIDAR EN CÓDIGO: index.js línea 2 (Alert en imports), settings.js (isDemo guard en delete)
+```
+
+**Perfil 5 — El de iPad (prueba todo en iPad Air 11")**
+```
+1. AuthScreen centrado (maxWidth 480) → no full-width en pantalla ancha
+2. Flujo needsEmail en iPad: campo email recibe foco, teclado aparece
+3. KeyboardAvoidingView no tapa el campo de email
+4. Historial en iPad: lista legible
+5. Home demo en iPad: botones funcionales
+6. Settings en iPad: sin overflow, sin texto cortado
+VALIDAR EN CÓDIGO: AuthScreen.js styles.formContainer (maxWidth: 480)
+```
+
+### Checklist de código que SIEMPRE verifico antes de buildear:
+
+```sh
+# 1. Buscar Alert sin importar
+grep -n "Alert\." app/app/\(tabs\)/index.js
+grep -n "^import" app/app/\(tabs\)/index.js | grep Alert
+
+# 2. Verificar autoFocus eliminado del email field
+grep -n "autoFocus" app/src/components/AuthScreen.js
+# → debe estar AUSENTE. El focus es via ref+setTimeout.
+
+# 3. Verificar demo guards
+grep -n "isDemo" app/app/\(tabs\)/index.js   # línea ~34 y ~200
+grep -n "isDemo" app/app/\(tabs\)/history.js # línea ~30
+grep -n "isDemo" app/app/\(tabs\)/settings.js # línea ~18 y ~72
+
+# 4. Verificar que las review notes en ASC coinciden con la UI actual
+#    → Ejecutar: node scripts/asc-update-build15.mjs --metadata
+
+# 5. Verificar URLs vivas
+curl -s -o /dev/null -w "%{http_code}" https://tag-control.vercel.app/privacy
+curl -s -o /dev/null -w "%{http_code}" https://tag-control.vercel.app/support
+
+# 6. Verificar Support URL en ASC apunta a /support (no a raíz)
+#    → revisar en App Store Connect o via API
+```
+
+### Regla de review notes:
+
+**Cada vez que cambie AuthScreen.js, actualizar review notes ANTES del build:**
+```sh
+node scripts/asc-update-build15.mjs --metadata
+```
+
+Las notes deben describir exactamente la UI actual:
+- Cuántos campos tiene el login form (no inventar)
+- Cuándo aparece el campo de email (solo en registro nuevo)
+- Credenciales exactas: revisor / 2026 / sin email
+
+### Si hay un rechazo:
+
+1. Leer el rechazo textual completo (no el email, el Resolution Center)
+2. Hacer los 5 walkthroughs del perfil que activó el rechazo
+3. Encontrar la línea exacta de código que causa el problema
+4. Verificar que el fix no rompe ninguno de los otros 4 perfiles
+5. Actualizar review notes si cambió algo visible en la UI
+6. **No submitear hasta que los 5 walkthroughs pasen limpio**
