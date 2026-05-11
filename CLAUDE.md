@@ -160,6 +160,8 @@ cd app && npx eas-cli build --platform android --profile preview  # APK de distr
 # Scripts de mantenimiento
 node scripts/check-shared-drift.mjs         # verifica que frontend/ y app/ estén sincronizados
 node scripts/check-shared-drift.mjs --fix   # sincroniza app/ desde frontend/ (canonical)
+node scripts/qa-agent.mjs                             # QA flows de usuario — correr ANTES de cada build
+node scripts/qa-agent.mjs --static                    # solo chequeos estáticos (sin API, rápido)
 node scripts/code-review-agent.mjs --staged --strict  # code review antes de commitear
 node scripts/analytics-agent.mjs --days=7 --format=whatsapp  # resumen semanal
 node scripts/gps-calibration-agent.mjs --days=7  # propone calibraciones de peajes
@@ -340,6 +342,12 @@ Antes de cada build, verifico que cada fila esté en estado PASS. Una fila en FA
 ### PARTE 2 — CHECKLIST PRE-BUILD (correr en orden, sin saltarse pasos)
 
 ```sh
+# ══════════════════════════════════════════════════════════
+# STEP 0: QA AGENT (NUEVO — correr SIEMPRE primero)
+# ══════════════════════════════════════════════════════════
+node scripts/qa-agent.mjs
+# → debe terminar "0 críticos · 0 altos" antes de continuar
+
 # ══════════════════════════════════════════════════════════
 # STEP 1: CÓDIGO
 # ══════════════════════════════════════════════════════════
