@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  KeyboardAvoidingView, Platform, Linking, Image, ScrollView,
+  KeyboardAvoidingView, Platform, Linking, Image, ScrollView, Keyboard,
 } from 'react-native';
 
 const PRIMARY = '#0F6E56';
@@ -19,7 +19,8 @@ export default function AuthScreen({ onLogin, onDemoLogin }) {
 
   useEffect(() => {
     if (needsEmail) {
-      const t = setTimeout(() => emailRef.current?.focus(), 150);
+      Keyboard.dismiss();
+      const t = setTimeout(() => emailRef.current?.focus(), 300);
       return () => clearTimeout(t);
     }
   }, [needsEmail]);
@@ -36,7 +37,7 @@ export default function AuthScreen({ onLogin, onDemoLogin }) {
     try {
       if (needsEmail && pendingUser) {
         const ok = await Promise.race([onLogin(pendingUser.name, pin, email.trim()), timeout]);
-        if (!ok) setError('Error al guardar email');
+        if (!ok) setError('Error al guardar email. Intenta de nuevo.');
       } else {
         const result = await Promise.race([
           onLogin(name.trim(), pin, email.trim() || undefined),
@@ -46,12 +47,14 @@ export default function AuthScreen({ onLogin, onDemoLogin }) {
           setNeedsEmail(true);
           setPendingUser({ name: name.trim() });
           setError('');
+        } else if (result === 'connection') {
+          setError('Sin conexión. Revisa tu internet e intenta de nuevo.');
         } else if (!result) {
           setError('PIN incorrecto');
         }
       }
     } catch {
-      setError('Sin conexión. Toca "Ver cómo funciona →" para explorar la app.');
+      setError('Algo salió mal. Intenta de nuevo.');
     }
     setLoading(false);
   };

@@ -43,6 +43,103 @@ node scripts/multi-perspective-audit.mjs --format=whatsapp
 
 Los hallazgos críticos van al ROADMAP.md. Los bugs encontrados se fijan en la misma sesión.
 
+---
+
+## ⚙️ Protocolo de desarrollo de features
+
+> Aprendido a las malas: el 80% de los commits de TAGcontrol fueron `fix:` reactivos.
+> Este protocolo existe para que el siguiente feature no repita ese patrón.
+> Cada paso tiene un **gate de salida** — no se avanza sin pasarlo.
+
+### Paso 0 — Compliance: ¿hay algún constraint externo? (5 min)
+
+Antes de diseñar cualquier cosa, pregunta:
+- ¿Toca `UIBackgroundModes`, permisos, datos de usuario, compras?
+- ¿Afecta las App Store Guidelines, GDPR, o los ToS de Supabase/Expo?
+- ¿Hay documentación oficial que aplique?
+
+Si la respuesta a cualquiera es **sí** → leer esa documentación **completa** antes de continuar.
+Si no puedes citar la regla que valida cada decisión, esa decisión no está validada.
+
+**Gate:** "Entiendo las restricciones externas antes de diseñar."
+
+---
+
+### Paso 1 — Lee lo que existe hoy (antes de escribir código)
+
+- ¿Qué hace el usuario SIN esta feature? (¿Excel? ¿WhatsApp? ¿Nada?)
+- ¿Qué código existe hoy relacionado? → `grep` + leer los archivos relevantes
+- ¿Qué dice el ROADMAP? ¿Hay contexto de por qué esto importa?
+
+**Gate:** "Entiendo el problema, no solo el feature."
+
+---
+
+### Paso 2 — Dibuja en texto antes de codear (10 líneas máx)
+
+Sin HTML, sin código, sin Figma. En el chat:
+- Modelo de datos: ¿qué tablas/campos cambian?
+- Flujo de usuario: 3-5 pasos en texto plano
+- Archivos que van a cambiar: lista explícita
+
+**Gate:** confirmación del usuario sobre el modelo antes de escribir una línea.
+
+---
+
+### Paso 3 — Demo mode primero (sin backend)
+
+Toda feature nueva entra primero con datos hardcodeados + guard `isDemo`.
+La pregunta central: *"¿El usuario entiende el valor sin datos reales?"*
+
+Casos especiales:
+- **GPS/detección**: simular con un viaje grabado, no GPS en vivo
+- **Background tasks**: `console.log` + Expo DevTools antes de EAS build
+- **Shared logic**: `check-shared-drift.mjs` después de cada cambio
+
+**Gate:** la feature funciona en demo antes de tocar Supabase o GPS real.
+
+---
+
+### Paso 4 — Una pregunta binaria a un usuario real
+
+No "¿qué te parece?" — eso no da datos.
+Una pregunta con respuesta sí/no que mide si el problema está resuelto:
+
+> "¿Cambiarías el Excel por esto?"
+> "¿Mostrarías esto a un conductor nuevo?"
+> "¿Olvidaste tocar 'Iniciar viaje' la semana pasada?" ← dato de retención
+
+**Esta pregunta se escribe en el Paso 1, no después de construir.**
+Si no puedes escribirla en el Paso 1, el problema no está claro todavía.
+
+**Gate:** respuesta de al menos 1 usuario real antes de conectar el backend.
+
+---
+
+### Paso 5 — Backend recién cuando el UX está validado
+
+Supabase, GPS real, notificaciones push. Esto es trabajo mecánico cuando el UX ya está probado.
+
+```sh
+node scripts/code-review-agent.mjs --staged --strict   # antes de commitear
+node scripts/check-shared-drift.mjs                    # si toca shared logic
+```
+
+**Gate:** `code-review-agent --strict` pasa limpio. Sin warnings críticos.
+
+---
+
+### Cuándo saltarse pasos
+
+| Situación | Qué saltear |
+|---|---|
+| Bug crítico en producción | Paso 3 y 4 — fix directo con test manual |
+| Cambio de copy / estilo | Paso 0, 3, 4 — solo Paso 1 + 2 + 5 |
+| Feature de infraestructura (scripts, CI) | Paso 3 y 4 no aplican |
+| Cambio en App Store metadata | Solo Paso 0 + checklist iOS |
+
+---
+
 ## Stack
 - **PWA (`frontend/`):** React 19 + Vite + Tailwind 4 + Supabase. Deploy en Vercel.
 - **App nativa (`app/`):** React Native + Expo SDK 54 + expo-location background. Build via EAS.

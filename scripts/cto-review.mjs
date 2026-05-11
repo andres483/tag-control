@@ -19,9 +19,8 @@
  *   --full: fuerza completo sin importar el count
  */
 
-import Anthropic from '@anthropic-ai/sdk';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
-import { execSync } from 'child_process';
+import { execSync, spawnSync } from 'child_process';
 import { sendMessage, agentBlock, isConfigured as slackReady } from './lib/slack.mjs';
 
 const STATE_PATH = new URL('.cto-state.json', import.meta.url).pathname;
@@ -132,24 +131,33 @@ const ROLES = {
 
 // ── Audit runner ───────────────────────────────────────────────────────────────
 
+function askClaude(prompt) {
+  const r = spawnSync('claude', ['-p', prompt], {
+    encoding: 'utf8',
+    maxBuffer: 5 * 1024 * 1024,
+    timeout: 90000,
+  });
+  if (r.error) throw r.error;
+  return r.stdout.trim();
+}
+
 async function runAudit(roleKeys, context) {
-  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
   const results = await Promise.all(roleKeys.map(async key => {
     const role = ROLES[key];
     const qs = role.questions.map((q, i) => `${i + 1}. ${q}`).join('\n');
-    const r = await client.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 450,
-      system: `Eres un ${role.name} con experiencia en apps de movilidad y fintech en Chile.
+    const prompt = `Eres un ${role.name} con experiencia en apps de movilidad y fintech en Chile.
 Tu foco: ${role.focus}.
 Eres directo, crítico, sin halagos. Identificas problemas reales con acciones concretas.
-El equipo tiene 48 horas para mejorar el producto.`,
-      messages: [{
-        role: 'user',
-        content: `${context}\n\n---\nResponde estas 3 preguntas desde tu rol. Máximo 3 líneas por respuesta. Sin intro:\n\n${qs}`,
-      }],
-    });
-    return { key, ...role, findings: r.content[0].text };
+El equipo tiene 48 horas para mejorar el producto.
+
+${context}
+
+---
+Responde estas 3 preguntas desde tu rol. Máximo 3 líneas por respuesta. Sin intro:
+
+${qs}`;
+    const findings = askClaude(prompt);
+    return { key, ...role, findings };
   }));
   return results;
 }
@@ -215,12 +223,6 @@ async function main() {
   const areas = [cat.detection && 'detección GPS', cat.ui && 'UI', cat.backend && 'backend'].filter(Boolean);
   console.log(`    Áreas cambiadas: ${areas.join(', ') || 'misc'}`);
   console.log(`    Roles: ${rolesToRun.join(', ')}\n`);
-
-  if (!process.env.ANTHROPIC_API_KEY) {
-    console.log('⚠️  ANTHROPIC_API_KEY no configurado — saltando audit.\n');
-    console.log('   Exporta la variable y vuelve a correr para el audit completo.\n');
-    return;
-  }
 
   const CLAUDE_MD  = existsSync('./CLAUDE.md')  ? readFileSync('./CLAUDE.md', 'utf8')  : '';
   const ROADMAP_MD = existsSync('./ROADMAP.md') ? readFileSync('./ROADMAP.md', 'utf8') : '';

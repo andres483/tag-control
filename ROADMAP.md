@@ -21,7 +21,7 @@ No hay fechas. Construimos en bloques de valor. Un día de trabajo intenso vale 
 
 ## 🔨 En progreso
 
-- Apple App Store review — Build 14 re-submitteado (7 May 2026). Esperando revisión de Apple.
+- **✅ App Store APROBADA — Build 16 (11 May 2026)** — https://apps.apple.com/app/tagcontrol/id6762680012
 - 100 usuarios activos con detección 100% precisa
 
 ---

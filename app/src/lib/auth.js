@@ -38,11 +38,17 @@ export async function login(name, pin, email) {
     return { user: REVIEWER_USER };
   }
 
-  const { data: userRow } = await supabase
-    .from('users')
-    .select('*')
-    .ilike('name', name)
-    .single();
+  let userRow;
+  try {
+    const { data } = await supabase
+      .from('users')
+      .select('*')
+      .ilike('name', name)
+      .single();
+    userRow = data;
+  } catch {
+    return { error: 'connection' };
+  }
 
   if (userRow) {
     const hashed = await hashPin(userRow.name, pin);
