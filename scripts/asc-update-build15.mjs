@@ -20,7 +20,7 @@ const APP_ID = '6762680012';
 const VERSION_ID = '94706861-cd1b-41ea-b502-b42d04bbe877';
 const LOC_ID = '4b3204be-a31f-42ce-bcfb-9d89dfb213c5'; // appStoreVersionLocalization es-MX
 const REVIEW_DETAIL_ID = '46b81b64-3974-4fdb-b63d-e094d229fec0';
-const SUBMISSION_ID = '41ba5a13-94fe-4fcb-92cb-2871c9c4282f';
+const SUBMISSION_ID = '14ac2994-dc83-4fa9-a67a-c3a6a4474fcc';
 const P8_PATH = '/Users/panthervillagran/blooming-website/proposals/clients/tagcontrol/AuthKey_S43MJL4WRM.p8';
 
 const SUPPORT_URL = 'https://tag-control.vercel.app/support';
