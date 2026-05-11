@@ -195,7 +195,7 @@ const s = StyleSheet.create({
   deleteButton: { paddingVertical: 14, alignItems: 'center', marginTop: 4 },
   deleteText: { fontSize: 13, color: '#bbb' },
 
-  privacyLink: { textAlign: 'center', fontSize: 12, color: '#aaa', marginTop: 20, textDecorationLine: 'underline' },
+  privacyLink: { textAlign: 'center', fontSize: 13, color: '#888', marginTop: 20, textDecorationLine: 'underline' },
 
   version: { textAlign: 'center', fontSize: 11, color: '#ccc', marginTop: 8 },
 });

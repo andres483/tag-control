@@ -124,7 +124,7 @@ export default function HomeScreen() {
     if (!mode) {
       Alert.alert(
         'Permiso de ubicación requerido',
-        'TAGcontrol necesita acceso a tu ubicación para detectar peajes. Ve a Configuración > TAGcontrol > Ubicación y selecciona "Al usar la app" o "Siempre".',
+        'TAGcontrol necesita acceso a tu ubicación para detectar peajes. Ve a Configuración > TAGcontrol > Ubicación y actívalo.',
         [{ text: 'OK' }]
       );
       return;
@@ -284,7 +284,7 @@ export default function HomeScreen() {
           <View style={s.foregroundNotice}>
             <Text style={s.foregroundNoticeText}>
               <Text style={{ fontWeight: '700' }}>Mant\u00e9n la app visible</Text>
-              {' \u2014 el GPS se pausa si cierras la app. Para detecci\u00f3n en segundo plano, ve a Configuraci\u00f3n > TAGcontrol > Ubicaci\u00f3n > Siempre.'}
+              {' \u2014 el GPS se pausa si cierras la app. Mant\u00e9n TAGcontrol en pantalla para detectar todos los peajes.'}
             </Text>
           </View>
         )}

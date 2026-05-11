@@ -216,5 +216,5 @@ const s = StyleSheet.create({
   buttonDisabled: { opacity: 0.4 },
   buttonText: { color: '#fff', fontWeight: '600', fontSize: 16 },
   hint: { fontSize: 12, color: '#aaa', marginTop: 14, textAlign: 'center' },
-  privacyLink: { fontSize: 11, color: '#bbb', marginTop: 12, textDecorationLine: 'underline' },
+  privacyLink: { fontSize: 13, color: '#888', marginTop: 12, textDecorationLine: 'underline' },
 });
