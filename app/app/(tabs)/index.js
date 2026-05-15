@@ -216,6 +216,21 @@ export default function HomeScreen() {
     }
 
     if (currentId) endLiveTrip(currentId).catch(() => {});
+
+    // Summary notification
+    const tollCount = allCrossings.length;
+    const body = tollCount > 0
+      ? `${tollCount} peaje${tollCount > 1 ? 's' : ''} · ${formatCLP(cost)}`
+      : 'Sin peajes detectados en este viaje';
+    Notifications.scheduleNotificationAsync({
+      content: {
+        title: 'Viaje terminado',
+        body,
+        sound: false,
+      },
+      trigger: null,
+    }).catch(() => {});
+
     tripIdRef.current = null;
     setIsActive(false);
   };
