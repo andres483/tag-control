@@ -36,10 +36,10 @@ export default function HomeScreen() {
       try {
         const { data: b } = await supabase.from('budgets').select('*').eq('user_name', user.name).single();
         const now = new Date();
-        const { data: trips } = await supabase.from('trips').select('total_cost,start_time').eq('driver', user.name);
-        const monthSpent = (trips || [])
-          .filter(t => { const d = new Date(t.start_time); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); })
-          .reduce((s, t) => s + (t.total_cost || 0), 0);
+        const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+        const { data: trips } = await supabase.from('trips').select('total_cost')
+          .eq('driver', user.name).gte('start_time', firstOfMonth);
+        const monthSpent = (trips || []).reduce((s, t) => s + (t.total_cost || 0), 0);
         setBudget({ monthly_limit: b?.monthly_limit || 0, spent: monthSpent });
       } catch { setBudget({ monthly_limit: 0, spent: 0 }); }
     }

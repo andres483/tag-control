@@ -100,11 +100,14 @@ function processLocation(location) {
       ? pointToSegmentDistance(toll.lat, toll.lng, prev.lat, prev.lng, latitude, longitude)
       : haversine(latitude, longitude, toll.lat, toll.lng);
 
-    // wasRecentlyMoving handles urban tolls in traffic (Costanera Norte,
-    // Vespucio, Autopista Central): vehicle was at highway speed recently
-    // and slowed to crawl at the toll gate. Zero-speed fallback covers
-    // background mode where expo-location sometimes reports speed=0.
-    const speedOk = wasRecentlyMoving || (speedKmh === 0 && distance <= radius);
+    // wasRecentlyMoving handles urban tolls where vehicle slows at the gate.
+    // Require the vehicle to still be within the toll's tighter inner radius
+    // (60% of detection radius) when stopped — avoids false positives at
+    // nearby fuel stations or traffic lights adjacent to tolls.
+    const innerRadius = radius * 0.6;
+    const speedOk = speedKmh >= MIN_SPEED_KMH ||
+      (wasRecentlyMoving && distance <= innerRadius) ||
+      (speedKmh === 0 && distance <= innerRadius); // background mode speed=0 fallback
 
     if (distance <= radius && speedOk) {
       _cooldowns[groupKey] = now;
