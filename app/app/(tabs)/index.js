@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Platform, Image, Linking, Alert } from 'react-native';
+import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useUser } from '../_layout';
@@ -7,7 +8,7 @@ import { formatCLP, formatTime } from '../../src/lib/format';
 import { getTarifa, getTarifaLabel } from '../../src/lib/pricing';
 import { inferMissingTolls, inferPostTrip } from '../../src/lib/inference';
 import { TOLL_GROUP_KEY } from '../../src/lib/geoUtils';
-import { requestLocationPermissions, startTracking, stopTracking } from '../../src/lib/locationService';
+import { requestLocationPermissions, startTracking, stopTracking, startWatching, stopWatching } from '../../src/lib/locationService';
 import { upsertLiveTrip, insertLiveCrossing, insertPosition, endLiveTrip, cleanupOldPositions, closeOrphanedTrips, flushPositionQueue } from '../../src/lib/liveTracking';
 import { supabase } from '../../src/lib/supabase';
 
@@ -45,6 +46,17 @@ export default function HomeScreen() {
     }
     loadBudget();
   }, [user.name, user.isDemo, isActive]);
+
+  // Auto-detection: watch for highway speed when no trip is active
+  useEffect(() => {
+    if (user.isDemo || isActive) return;
+    startWatching({
+      onAutoStart: () => {
+        handleStartTrip({ auto: true });
+      },
+    });
+    return () => stopWatching();
+  }, [isActive, user.isDemo]);
 
   const totalCost = crossings.reduce((sum, c) => sum + getTarifa(c.toll, new Date(c.timestamp)), 0);
   const tollCount = crossings.length;
@@ -119,14 +131,16 @@ export default function HomeScreen() {
     return () => clearInterval(positionIntervalRef.current);
   }, [isActive, position?.lat, position?.lng, user.name]);
 
-  const handleStartTrip = async () => {
+  const handleStartTrip = async ({ auto = false } = {}) => {
     const mode = await requestLocationPermissions();
     if (!mode) {
-      Alert.alert(
-        'Permiso de ubicación requerido',
-        'TAGcontrol necesita acceso a tu ubicación para detectar peajes. Ve a Configuración > TAGcontrol > Ubicación y actívalo.',
-        [{ text: 'OK' }]
-      );
+      if (!auto) {
+        Alert.alert(
+          'Permiso de ubicación requerido',
+          'TAGcontrol necesita acceso a tu ubicación para detectar peajes. Ve a Configuración > TAGcontrol > Ubicación y actívalo.',
+          [{ text: 'OK' }]
+        );
+      }
       return;
     }
 
@@ -142,14 +156,26 @@ export default function HomeScreen() {
     cleanupOldPositions().catch(() => {});
     closeOrphanedTrips(user.name, id).catch(() => {});
 
+    if (auto) {
+      Notifications.scheduleNotificationAsync({
+        content: {
+          title: 'Viaje iniciado automáticamente',
+          body: 'TAGcontrol detectó que estás en autopista. Detectando peajes...',
+          sound: true,
+        },
+        trigger: null,
+      }).catch(() => {});
+    }
+
     await startTracking({
       onTollCrossed: handleTollCrossed,
       onPositionUpdate: handlePositionUpdate,
+      onAutoStop: () => handleStopTrip({ auto: true }),
       background: isBackground,
     });
   };
 
-  const handleStopTrip = async () => {
+  const handleStopTrip = async ({ auto = false } = {}) => {
     await stopTracking();
     const currentId = tripIdRef.current;
     const cx = crossingsRef.current;
@@ -243,6 +269,11 @@ export default function HomeScreen() {
         <TouchableOpacity style={s.startButton} onPress={handleStartTrip}>
           <Text style={s.startButtonText}>Iniciar viaje</Text>
         </TouchableOpacity>
+
+        <View style={s.autoDetectHint}>
+          <View style={s.autoDetectDot} />
+          <Text style={s.autoDetectText}>Se inicia solo al detectar autopista</Text>
+        </View>
 
         <Text style={s.tarifaHint}>Tarifa {tarifaLabel.toLowerCase()}</Text>
       </ScrollView>
@@ -349,6 +380,9 @@ const s = StyleSheet.create({
   startButton: { backgroundColor: PRIMARY, borderRadius: 16, paddingVertical: 16, alignItems: 'center', marginBottom: 12 },
   startButtonText: { color: '#fff', fontWeight: '600', fontSize: 17 },
   tarifaHint: { fontSize: 11, color: '#aaa', textAlign: 'center' },
+  autoDetectHint: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 8, marginTop: 4 },
+  autoDetectDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#22c55e' },
+  autoDetectText: { fontSize: 12, color: '#22c55e', fontWeight: '500' },
   demoBanner: { backgroundColor: '#f0faf6', borderWidth: 1, borderColor: '#a7f3d0', borderRadius: 16, padding: 16, marginBottom: 20, width: '100%' },
   demoBannerTitle: { fontSize: 14, fontWeight: '700', color: '#065f46', marginBottom: 4 },
   demoBannerText: { fontSize: 13, color: '#374151', lineHeight: 18 },

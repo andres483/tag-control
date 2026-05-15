@@ -37,11 +37,24 @@ const MOVING_BUFFER_MS = 5 * 60 * 1000;
 // In-memory state for background task
 let _onTollCrossed = null;
 let _onPositionUpdate = null;
+let _onAutoStop = null;
 let _cooldowns = {};
 let _lastPosition = null;
 let _lastMovingAt = 0; // timestamp of last sample at >= MIN_SPEED_KMH
 let _isTracking = false;
 let _watchSubscription = null;
+
+// Auto-detection state (watching mode — lightweight GPS when no trip is active)
+let _onAutoStart = null;
+let _isWatching = false;
+let _watchSubscription2 = null;
+let _highSpeedSince = null;
+let _lastAutoStart = 0;
+
+const AUTO_START_SPEED_KMH = 60;
+const AUTO_START_DURATION_MS = 30000; // 30s sustained at ≥60 km/h
+const AUTO_START_COOLDOWN_MS = 3 * 60 * 1000; // 3 min between auto-starts
+const AUTO_STOP_MS = 8 * 60 * 1000; // 8 min without movement → auto-stop
 
 function processLocation(location) {
   const { latitude, longitude, speed: rawSpeed, accuracy } = location.coords;
@@ -73,6 +86,13 @@ function processLocation(location) {
   _lastPosition = { lat: latitude, lng: longitude, timestamp, speed: speedKmh };
 
   _onPositionUpdate?.({ lat: latitude, lng: longitude, speed: speedKmh, accuracy, timestamp });
+
+  // Auto-stop: if no movement for AUTO_STOP_MS, end the trip automatically
+  if (_onAutoStop && _lastMovingAt > 0 && (now - _lastMovingAt) > AUTO_STOP_MS) {
+    const cb = _onAutoStop;
+    _onAutoStop = null;
+    cb();
+  }
 
   // Battery optimization: skip the 81-toll detection loop when the driver is
   // clearly far from all autopistas. Compute nearest toll distance first;
@@ -144,6 +164,53 @@ TaskManager.defineTask(BACKGROUND_LOCATION_TASK, ({ data, error }) => {
 });
 
 /**
+ * Watching mode — lightweight GPS to auto-detect highway driving.
+ * Fires onAutoStart after AUTO_START_DURATION_MS at ≥ AUTO_START_SPEED_KMH.
+ * Only activates if foreground permission is already granted.
+ */
+export async function startWatching({ onAutoStart, onAutoStop }) {
+  if (_isTracking || _isWatching) return;
+  const { status } = await Location.getForegroundPermissionsAsync();
+  if (status !== 'granted') return;
+
+  _onAutoStart = onAutoStart;
+  _onAutoStop = onAutoStop;
+  _isWatching = true;
+  _highSpeedSince = null;
+
+  _watchSubscription2 = await Location.watchPositionAsync(
+    { accuracy: Location.Accuracy.Balanced, distanceInterval: 50, timeInterval: 8000 },
+    (location) => {
+      if (!_isWatching) return;
+      const rawSpeed = location.coords.speed;
+      const speedKmh = (rawSpeed != null && rawSpeed >= 0) ? msToKmh(rawSpeed) : 0;
+      const now = Date.now();
+
+      if (speedKmh >= AUTO_START_SPEED_KMH) {
+        if (!_highSpeedSince) _highSpeedSince = now;
+        const elapsed = now - _highSpeedSince;
+        const cooledDown = now - _lastAutoStart > AUTO_START_COOLDOWN_MS;
+        if (elapsed >= AUTO_START_DURATION_MS && cooledDown) {
+          _lastAutoStart = now;
+          _highSpeedSince = null;
+          _onAutoStart?.();
+        }
+      } else {
+        _highSpeedSince = null;
+      }
+    }
+  );
+}
+
+export function stopWatching() {
+  _isWatching = false;
+  _onAutoStart = null;
+  _highSpeedSince = null;
+  _watchSubscription2?.remove();
+  _watchSubscription2 = null;
+}
+
+/**
  * Request location permissions (foreground + background).
  * Returns 'background' | 'foreground' | false.
  * 'foreground' = tracking works but only while app is visible.
@@ -164,9 +231,11 @@ export async function requestLocationPermissions() {
  * background=true: tracks even when app is closed (requires Always permission).
  * background=false: tracks only while app is visible (When In Use permission).
  */
-export async function startTracking({ onTollCrossed, onPositionUpdate, background = true }) {
+export async function startTracking({ onTollCrossed, onPositionUpdate, onAutoStop, background = true }) {
+  stopWatching(); // stop lightweight watching before full tracking begins
   _onTollCrossed = onTollCrossed;
   _onPositionUpdate = onPositionUpdate;
+  _onAutoStop = onAutoStop || null;
   _cooldowns = {};
   _lastPosition = null;
   _lastMovingAt = 0;
