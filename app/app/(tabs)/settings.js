@@ -58,7 +58,7 @@ export default function SettingsScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await deleteAccount(user.name);
+              await deleteAccount(user.id, user.name);
               logout();
             } catch {
               Alert.alert('Error', 'No se pudo eliminar la cuenta. Intenta de nuevo.');

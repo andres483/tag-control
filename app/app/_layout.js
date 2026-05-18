@@ -32,11 +32,11 @@ export default function RootLayout() {
       <>
         <StatusBar style="dark" />
         <AuthScreen
-          onLogin={async (name, pin, email) => {
-            const result = await login(name, pin, email);
+          onLogin={async (email, pin, name) => {
+            const result = await login(email, pin, name);
             if (result.error === 'connection') return 'connection';
             if (result.error) return false;
-            if (result.needsEmail) return 'needsEmail';
+            if (result.needsName) return 'needsName';
             if (result.user) { setUser(result.user); return true; }
             return false;
           }}

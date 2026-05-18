@@ -7,25 +7,25 @@ import {
 const PRIMARY = '#0F6E56';
 
 export default function AuthScreen({ onLogin, onDemoLogin }) {
-  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [pin, setPin] = useState('');
+  const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [demoLoading, setDemoLoading] = useState(false);
-  const [needsEmail, setNeedsEmail] = useState(false);
-  const [pendingUser, setPendingUser] = useState(null);
-  const emailRef = useRef(null);
+  const [needsName, setNeedsName] = useState(false);
+  const nameRef = useRef(null);
 
   useEffect(() => {
-    if (needsEmail) {
+    if (needsName) {
       Keyboard.dismiss();
-      const t = setTimeout(() => emailRef.current?.focus(), 300);
+      const t = setTimeout(() => nameRef.current?.focus(), 300);
       return () => clearTimeout(t);
     }
-  }, [needsEmail]);
+  }, [needsName]);
 
-  const canSubmit = name.trim() && pin.length === 4 && (!needsEmail || email.trim().includes('@'));
+  const emailValid = email.trim().includes('@') || email.trim().toLowerCase() === 'revisor';
+  const canSubmit = emailValid && pin.length === 4 && (!needsName || name.trim().length > 0);
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
@@ -35,23 +35,17 @@ export default function AuthScreen({ onLogin, onDemoLogin }) {
       setTimeout(() => reject(new Error('timeout')), 25000)
     );
     try {
-      if (needsEmail && pendingUser) {
-        const ok = await Promise.race([onLogin(pendingUser.name, pin, email.trim()), timeout]);
-        if (!ok) setError('Error al guardar email. Intenta de nuevo.');
-      } else {
-        const result = await Promise.race([
-          onLogin(name.trim(), pin, email.trim() || undefined),
-          timeout,
-        ]);
-        if (result === 'needsEmail') {
-          setNeedsEmail(true);
-          setPendingUser({ name: name.trim() });
-          setError('');
-        } else if (result === 'connection') {
-          setError('Sin conexión. Revisa tu internet e intenta de nuevo.');
-        } else if (!result) {
-          setError('PIN incorrecto');
-        }
+      const result = await Promise.race([
+        onLogin(email.trim(), pin, needsName ? name.trim() : undefined),
+        timeout,
+      ]);
+      if (result === 'needsName') {
+        setNeedsName(true);
+        setError('');
+      } else if (result === 'connection') {
+        setError('Sin conexión. Revisa tu internet e intenta de nuevo.');
+      } else if (!result) {
+        setError('PIN incorrecto');
       }
     } catch {
       setError('Algo salió mal. Intenta de nuevo.');
@@ -76,86 +70,92 @@ export default function AuthScreen({ onLogin, onDemoLogin }) {
         showsVerticalScrollIndicator={false}
       >
         <View style={s.formContainer}>
-        {/* Brand */}
-        <Image source={require('../../assets/icon.png')} style={s.icon} />
-        <Text style={s.title}>TAGcontrol</Text>
-        <Text style={s.subtitle}>¿Cuánto gastaste en peajes este mes?</Text>
+          {/* Brand */}
+          <Image source={require('../../assets/icon.png')} style={s.icon} />
+          <Text style={s.title}>TAGcontrol</Text>
+          <Text style={s.subtitle}>¿Cuánto gastaste en peajes este mes?</Text>
 
-        {/* Demo — visible BEFORE the form so it's never hidden by the keyboard */}
-        <TouchableOpacity style={s.demoButton} onPress={handleDemo} disabled={demoLoading}>
-          <Text style={s.demoButtonText}>
-            {demoLoading ? 'Cargando…' : 'Ver cómo funciona →'}
-          </Text>
-        </TouchableOpacity>
-
-        {/* Divider */}
-        <View style={s.divider}>
-          <View style={s.dividerLine} />
-          <Text style={s.dividerText}>o inicia sesión</Text>
-          <View style={s.dividerLine} />
-        </View>
-
-        {/* Login form */}
-        {needsEmail ? (
-          <>
-            <Text style={s.emailPrompt}>
-              Hola {pendingUser?.name}, agrega tu email para continuar
+          {/* Demo — visible before form so it's never hidden by keyboard */}
+          <TouchableOpacity style={s.demoButton} onPress={handleDemo} disabled={demoLoading}>
+            <Text style={s.demoButtonText}>
+              {demoLoading ? 'Cargando…' : 'Ver cómo funciona →'}
             </Text>
-            <TextInput
-              ref={emailRef}
-              style={s.input}
-              placeholder="tu@email.com"
-              placeholderTextColor="#999"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              returnKeyType="done"
-              onSubmitEditing={handleSubmit}
-            />
-          </>
-        ) : (
-          <>
-            <TextInput
-              style={s.input}
-              placeholder="Tu nombre"
-              placeholderTextColor="#999"
-              value={name}
-              onChangeText={setName}
-              autoCapitalize="words"
-              autoCorrect={false}
-            />
-            <TextInput
-              style={s.input}
-              placeholder="PIN (4 dígitos)"
-              placeholderTextColor="#999"
-              value={pin}
-              onChangeText={(t) => setPin(t.replace(/\D/g, '').slice(0, 4))}
-              keyboardType="number-pad"
-              secureTextEntry
-              maxLength={4}
-            />
-          </>
-        )}
+          </TouchableOpacity>
 
-        {error ? <Text style={s.error}>{error}</Text> : null}
+          {/* Divider */}
+          <View style={s.divider}>
+            <View style={s.dividerLine} />
+            <Text style={s.dividerText}>o inicia sesión</Text>
+            <View style={s.dividerLine} />
+          </View>
 
-        <TouchableOpacity
-          style={[s.button, !canSubmit && s.buttonDisabled]}
-          onPress={handleSubmit}
-          disabled={loading || !canSubmit}
-        >
-          <Text style={s.buttonText}>{loading ? 'Entrando…' : 'Entrar'}</Text>
-        </TouchableOpacity>
+          {/* Always-visible fields */}
+          <TextInput
+            style={s.input}
+            placeholder="Tu correo electrónico"
+            placeholderTextColor="#999"
+            value={email}
+            onChangeText={(v) => { setEmail(v); setNeedsName(false); setError(''); }}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+            returnKeyType="next"
+          />
+          <TextInput
+            style={s.input}
+            placeholder="PIN (4 dígitos)"
+            placeholderTextColor="#999"
+            value={pin}
+            onChangeText={(t) => setPin(t.replace(/\D/g, '').slice(0, 4))}
+            keyboardType="number-pad"
+            secureTextEntry
+            maxLength={4}
+            returnKeyType={needsName ? 'next' : 'done'}
+            onSubmitEditing={needsName ? () => nameRef.current?.focus() : handleSubmit}
+          />
 
-        <Text style={s.hint}>
-          {needsEmail ? 'Solo lo usamos para recuperar tu cuenta' : '¿Primera vez? Pon tu nombre + PIN — se crea sola'}
-        </Text>
+          {/* Name field — only for new accounts */}
+          {needsName && (
+            <>
+              <Text style={s.registerPrompt}>
+                Correo nuevo — ¿cómo te llamamos?
+              </Text>
+              <TextInput
+                ref={nameRef}
+                style={s.input}
+                placeholder="Tu nombre"
+                placeholderTextColor="#999"
+                value={name}
+                onChangeText={setName}
+                autoCapitalize="words"
+                autoCorrect={false}
+                returnKeyType="done"
+                onSubmitEditing={handleSubmit}
+              />
+            </>
+          )}
 
-        <TouchableOpacity onPress={() => Linking.openURL('https://tag-control.vercel.app/privacy')}>
-          <Text style={s.privacyLink}>Política de privacidad</Text>
-        </TouchableOpacity>
+          {error ? <Text style={s.error}>{error}</Text> : null}
+
+          <TouchableOpacity
+            style={[s.button, !canSubmit && s.buttonDisabled]}
+            onPress={handleSubmit}
+            disabled={loading || !canSubmit}
+          >
+            <Text style={s.buttonText}>
+              {loading ? 'Entrando…' : needsName ? 'Crear cuenta' : 'Entrar'}
+            </Text>
+          </TouchableOpacity>
+
+          <Text style={s.hint}>
+            {needsName
+              ? 'Solo lo usamos para mostrarte en tu perfil'
+              : '¿Primera vez? Pon tu correo + PIN — se crea sola'}
+          </Text>
+
+          <TouchableOpacity onPress={() => Linking.openURL('https://tag-control.vercel.app/privacy')}>
+            <Text style={s.privacyLink}>Política de privacidad</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -196,7 +196,7 @@ const s = StyleSheet.create({
   dividerLine: { flex: 1, height: 1, backgroundColor: '#eee' },
   dividerText: { fontSize: 12, color: '#bbb', marginHorizontal: 10 },
 
-  emailPrompt: { fontSize: 14, color: '#555', textAlign: 'center', marginBottom: 16, lineHeight: 20 },
+  registerPrompt: { fontSize: 13, color: '#555', textAlign: 'center', marginBottom: 10, marginTop: 4 },
   input: {
     width: '100%',
     backgroundColor: '#f5f5f5',

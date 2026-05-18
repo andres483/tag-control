@@ -27,61 +27,80 @@ export async function getStoredUser() {
 }
 
 /**
- * Login: existing user (name + pin) or register new user (name + pin + email).
- * Single Supabase round-trip: fetch full user row, then compare hash locally.
- * Using the stored canonical name for hashing fixes iOS auto-capitalization:
- * "Revisor" typed → finds "revisor" in DB → hashes as "revisor:pin" → matches.
+ * Login / register.
+ * Email is the unique identifier. PIN is the password.
+ * Name is only required on first registration (when email is new).
+ *
+ * Legacy fallback: if no account found by email, tries lookup by name
+ * so users who registered before email-auth can still log in.
  */
-export async function login(name, pin, email) {
-  if (name.trim().toLowerCase() === 'revisor' && pin === '2026') {
+export async function login(email, pin, name) {
+  const normalized = email.trim().toLowerCase();
+
+  // Reviewer bypass — works offline, no Supabase needed
+  if (normalized === 'revisor' && pin === '2026') {
     await SecureStore.setItemAsync(USER_KEY, JSON.stringify(REVIEWER_USER));
     return { user: REVIEWER_USER };
   }
 
-  let userRow;
+  // ── Look up by email (primary) ──────────────────────────────────────────
+  let userRow = null;
   try {
     const { data } = await supabase
       .from('users')
       .select('*')
-      .ilike('name', name)
-      .single();
+      .ilike('email', normalized)
+      .maybeSingle(); // maybeSingle returns null (not an error) when no rows found
     userRow = data;
   } catch {
     return { error: 'connection' };
   }
 
+  // ── Legacy fallback: look up by name ────────────────────────────────────
+  // Covers users who registered before email was the identifier.
+  if (!userRow) {
+    try {
+      const { data } = await supabase
+        .from('users')
+        .select('*')
+        .ilike('name', email.trim())
+        .maybeSingle();
+      userRow = data;
+    } catch {
+      // Swallow — treat as "no legacy user found"
+    }
+  }
+
+  // ── Existing user ───────────────────────────────────────────────────────
   if (userRow) {
     const hashed = await hashPin(userRow.name, pin);
-
     if (userRow.pin === hashed || userRow.pin === pin) {
       if (userRow.pin === pin) {
-        // Legacy plaintext — upgrade to hash silently in background
-        supabase.from('users').update({ pin: hashed }).eq('name', userRow.name).then(() => {});
+        supabase.from('users').update({ pin: hashed }).eq('id', userRow.id).then(() => {});
         userRow.pin = hashed;
       }
-      if (email && !userRow.email) {
-        supabase.from('users').update({ email }).eq('name', userRow.name).then(() => {});
-        userRow.email = email;
+      // Silently attach email if missing (legacy user logging in)
+      if (!userRow.email && normalized.includes('@')) {
+        supabase.from('users').update({ email: normalized }).eq('id', userRow.id).then(() => {});
+        userRow.email = normalized;
       }
       await SecureStore.setItemAsync(USER_KEY, JSON.stringify(userRow));
-      if (!userRow.email && !email) return { needsEmail: true, user: userRow };
       return { user: userRow };
     }
-
     return { error: 'PIN incorrecto' };
   }
 
-  // Name not found — register new user
-  if (!email) return { needsEmail: true };
+  // ── New user registration ───────────────────────────────────────────────
+  if (!name) return { needsName: true };
 
-  const hashed = await hashPin(name, pin);
+  const hashed = await hashPin(name.trim(), pin);
   const { data: newUser, error } = await supabase
     .from('users')
-    .insert({ name, pin: hashed, email })
+    .insert({ name: name.trim(), pin: hashed, email: normalized })
     .select()
     .single();
 
-  if (error) return { error: 'Error al registrar' };
+  if (error) return { error: 'Error al registrar. Intenta de nuevo.' };
 
   await SecureStore.setItemAsync(USER_KEY, JSON.stringify(newUser));
   return { user: newUser };
@@ -91,7 +110,7 @@ export async function logout() {
   await SecureStore.deleteItemAsync(USER_KEY);
 }
 
-export async function deleteAccount(name) {
+export async function deleteAccount(userId, name) {
   const { data: trips } = await supabase.from('trips').select('id').eq('driver', name);
   const { data: liveTrips } = await supabase.from('live_trips').select('id').eq('driver', name);
   const tripIds = [...(trips || []), ...(liveTrips || [])].map(t => t.id);
@@ -103,6 +122,6 @@ export async function deleteAccount(name) {
   await supabase.from('trips').delete().eq('driver', name);
   await supabase.from('live_trips').delete().eq('driver', name);
   await supabase.from('budgets').delete().eq('user_name', name);
-  await supabase.from('users').delete().eq('name', name);
+  await supabase.from('users').delete().eq('id', userId);
   await SecureStore.deleteItemAsync(USER_KEY);
 }
