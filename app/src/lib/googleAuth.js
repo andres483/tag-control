@@ -3,7 +3,6 @@ import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-si
 export function configureGoogleSignIn() {
   GoogleSignin.configure({
     iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
-    webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
     offlineAccess: false,
     profileImageSize: 120,
   });
