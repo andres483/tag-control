@@ -106,6 +106,46 @@ export async function login(email, pin, name) {
   return { user: newUser };
 }
 
+/**
+ * Find or create a user from a verified Google sign-in.
+ * No PIN is required — Google itself authenticated the user.
+ * A random unusable pin hash is stored so the column stays non-null.
+ */
+export async function loginWithGoogle(email, name) {
+  const normalized = email.trim().toLowerCase();
+
+  // Try to find existing account by email
+  let userRow = null;
+  try {
+    const { data } = await supabase
+      .from('users')
+      .select('*')
+      .ilike('email', normalized)
+      .maybeSingle();
+    userRow = data;
+  } catch {
+    return { error: 'connection' };
+  }
+
+  if (userRow) {
+    await SecureStore.setItemAsync(USER_KEY, JSON.stringify(userRow));
+    return { user: userRow };
+  }
+
+  // New Google user — create account with an unusable random pin
+  const randomPin = await hashPin('google_auth', normalized + Date.now());
+  const { data: newUser, error } = await supabase
+    .from('users')
+    .insert({ name: name.trim(), email: normalized, pin: randomPin })
+    .select()
+    .single();
+
+  if (error) return { error: 'Error al registrar. Intenta de nuevo.' };
+
+  await SecureStore.setItemAsync(USER_KEY, JSON.stringify(newUser));
+  return { user: newUser };
+}
+
 export async function logout() {
   await SecureStore.deleteItemAsync(USER_KEY);
 }

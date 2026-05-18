@@ -2,13 +2,17 @@ import { useEffect, useState, createContext, useContext } from 'react';
 import { View } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { getStoredUser, login, logout } from '../src/lib/auth';
+import { getStoredUser, login, loginWithGoogle, logout } from '../src/lib/auth';
 import { demoLogin } from '../src/lib/demoData';
 import AuthScreen from '../src/components/AuthScreen';
 import { stopTracking, isTracking } from '../src/lib/locationService';
+import { configureGoogleSignIn } from '../src/lib/googleAuth';
 
 export const UserContext = createContext(null);
 export function useUser() { return useContext(UserContext); }
+
+// Configure Google Sign-In once at module level (before any render)
+configureGoogleSignIn();
 
 export default function RootLayout() {
   const [user, setUser] = useState(null);
@@ -16,7 +20,6 @@ export default function RootLayout() {
 
   useEffect(() => {
     // Clean up stale background location task if iOS killed the app during a trip.
-    // Skip if tracking is already active (relaunch during an intentional background trip).
     if (!isTracking()) stopTracking().catch(() => {});
 
     getStoredUser().then((u) => {
@@ -37,6 +40,12 @@ export default function RootLayout() {
             if (result.error === 'connection') return 'connection';
             if (result.error) return false;
             if (result.needsName) return 'needsName';
+            if (result.user) { setUser(result.user); return true; }
+            return false;
+          }}
+          onGoogleLogin={async (email, name) => {
+            const result = await loginWithGoogle(email, name);
+            if (result.error) return false;
             if (result.user) { setUser(result.user); return true; }
             return false;
           }}
