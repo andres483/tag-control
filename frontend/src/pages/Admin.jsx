@@ -14,6 +14,12 @@ import AdminTeam from './admin/AdminTeam';
 
 const ADMIN_PIN = '2026';
 
+// Test/review accounts — excluded from all growth metrics
+const TEST_NAMES = new Set(['revisor', 'tester', 'AppleReviewer']);
+const TEST_EMAILS = new Set(['review@tagcontrol.app', 'revisor@demo.tagcontrol.app']);
+const isTestUser = u => TEST_NAMES.has(u.name) || TEST_EMAILS.has(u.email);
+const isTestDriver = name => TEST_NAMES.has(name);
+
 export default function Admin() {
   const [authenticated, setAuthenticated] = useState(false);
   const [pin, setPin] = useState('');
@@ -138,7 +144,7 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
     setAllTrips(all.data || []);
     setCompletedTrips(completed.data || []);
     setAllCrossings(crossings.data || []);
-    setUsers(usersData.data || []);
+    setUsers((usersData.data || []).filter(u => !isTestUser(u)));
     setFeedbackItems(feedbackData.data || []);
 
     const cxByTrip = {};
@@ -151,8 +157,8 @@ function AdminDashboard({ tab, setTab, mapRef, mapInstanceRef, markersRef }) {
     }
     setLiveCrossingsByTrip(cxByTrip);
 
-    const cTrips = completed.data || [];
-    const liveData = live.data || [];
+    const cTrips = (completed.data || []).filter(t => !isTestDriver(t.driver));
+    const liveData = (live.data || []).filter(t => !isTestDriver(t.driver));
     const allCombined = [...cTrips, ...liveData.map(l => ({ driver: l.driver, total_cost: l.total_cost || 0, toll_count: l.toll_count || 0, platform: l.platform }))];
 
     const totalCostAll = allCombined.reduce((s, t) => s + (t.total_cost || 0), 0);

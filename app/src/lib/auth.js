@@ -128,8 +128,12 @@ export async function loginWithGoogle(email, name) {
   }
 
   if (userRow) {
-    await SecureStore.setItemAsync(USER_KEY, JSON.stringify(userRow));
-    return { user: userRow };
+    // Always use Google's name — it's the source of truth for Google accounts.
+    // Also tries to update the DB (best-effort; may be blocked by RLS).
+    const displayUser = { ...userRow, name: name.trim() };
+    supabase.from('users').update({ name: name.trim() }).eq('email', normalized).then(() => {});
+    await SecureStore.setItemAsync(USER_KEY, JSON.stringify(displayUser));
+    return { user: displayUser };
   }
 
   // New Google user — create account with an unusable random pin
