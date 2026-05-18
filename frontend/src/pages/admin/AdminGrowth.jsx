@@ -3,8 +3,6 @@ import { formatCLP } from '../../lib/format';
 const PLATS = [
   { k: 'ios', label: 'iOS', color: '#3b82f6' },
   { k: 'android', label: 'Android', color: '#22c55e' },
-  { k: 'web', label: 'Web', color: '#a855f7' },
-  { k: 'unknown', label: '?', color: '#6b7280' },
 ];
 
 function pct(curr, prev) {
